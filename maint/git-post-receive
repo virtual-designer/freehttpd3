@@ -1,3 +1,4 @@
 #!/bin/sh
 
+echo "Reminding you about your TODOs: Implement a automatic CI-like system"
 exit 0
