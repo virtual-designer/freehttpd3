@@ -1,4 +1,52 @@
 #!/bin/sh
 
-echo "Reminding you about your TODOs: Implement a automatic CI-like system"
-exit 0
+lock="/tmp/git-hook-freehttpd-auto-version"
+
+if test "$1" = "daemon"; then
+	onetime_log="/tmp/git-hook-frehttpd-post-receive.log"
+	rm -f "$onetime_log"
+
+	exec >> "$onetime_log" 2>&1
+
+	echo "Post-receive (auto-version) triggered at $(date)"
+	echo "$(date "%+s") $$" > "$lock"
+
+	echo "Waiting 60 seconds..."
+	sleep 60
+
+    mail -s "Git from OSN" rakinar2 <<EOF
+Hi there,
+
+This is the git hook system at onesoftnet.eu.org.  An auto-version job was scheduled
+at $(date).
+
+The log files of the result should be available as an attachment of this email.
+
+--
+Git Hook System at onesoftnet.eu.org
+EOF
+
+	echo "Executed successfully"
+	cat "$onetime_log" >> /var/log/git-hook-freehttpd-auto-version-daemon.log
+	rm -f "$onetime_log"
+	exit 0
+fi
+
+read oldrev newrev ref
+
+if test "$ref" != "refs/heads/main"; then
+	echo "Ref '$ref' will not trigger auto-version job"
+	exit 0
+fi
+
+if test -f "$lock"; then
+	time=`cat "$lock" | cut -d' ' -f1`
+	pid=`cat "$lock" | cut -d' ' -f2`
+	echo "Canceling existing auto-version job (scheduled at $(date --date="+${time}"))..."
+	rm -f "$lock"
+	kill -TERM "$pid"
+fi
+
+echo "Queuing auto-version job to be run in 1 minute..."
+nohup sh "$0" daemon >/dev/null 2>&1 &
+echo "Done"
