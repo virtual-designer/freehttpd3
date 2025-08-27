@@ -42,7 +42,7 @@ fi
 if test -f "$lock"; then
 	time=`cat "$lock" | cut -d' ' -f1`
 	pid=`cat "$lock" | cut -d' ' -f2`
-	echo "Canceling existing auto-version job (scheduled at $(date --date="+${time}"))..."
+	echo "Canceling existing auto-version job (scheduled at $(date --date="@${time}"))..."
 	rm -f "$lock"
 	kill -TERM "$pid" 2>/dev/null
 fi
