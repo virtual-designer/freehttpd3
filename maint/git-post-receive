@@ -9,7 +9,7 @@ if test "$1" = "daemon"; then
 	exec >> "$onetime_log" 2>&1
 
 	echo "Post-receive (auto-version) triggered at $(date)"
-	echo "$(date "%+s") $$" > "$lock"
+	echo "$(date "+%s") $$" > "$lock"
 
 	echo "Waiting 60 seconds..."
 	sleep 60
@@ -44,7 +44,7 @@ if test -f "$lock"; then
 	pid=`cat "$lock" | cut -d' ' -f2`
 	echo "Canceling existing auto-version job (scheduled at $(date --date="+${time}"))..."
 	rm -f "$lock"
-	kill -TERM "$pid"
+	kill -TERM "$pid" 2>/dev/null
 fi
 
 echo "Queuing auto-version job to be run in 1 minute..."
