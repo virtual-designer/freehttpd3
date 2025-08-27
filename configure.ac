@@ -19,7 +19,8 @@
 # along with OSN freehttpd.  If not, see <https://www.gnu.org/licenses/>.
 
 AC_PREREQ([2.61])
-define([FHTTPD_VERSION], m4_esyscmd([build-aux/git-version-gen -d .github/version.json .version]))
+
+define([FHTTPD_VERSION], m4_esyscmd([build-aux/git-version-gen -g -d .github/version.json .version]))
 
 AC_INIT([freehttpd],
   FHTTPD_VERSION,
