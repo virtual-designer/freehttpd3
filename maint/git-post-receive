@@ -14,7 +14,7 @@ if test "$1" = "daemon"; then
 	echo "Waiting 60 seconds..."
 	sleep 60
 
-    mail -s "Git from OSN" rakinar2 <<EOF
+    mail -s "Git from OSN" -A "$onetime_log" rakinar2 <<EOF
 Hi there,
 
 This is the git hook system at onesoftnet.eu.org.  An auto-version job was scheduled
