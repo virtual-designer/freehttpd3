@@ -28,7 +28,7 @@ EOF
 
 	echo "Executed successfully"
 	cat "$onetime_log" >> /var/log/git-hook-freehttpd-auto-version-daemon.log
-	rm -f "$onetime_log"
+	rm -f "$onetime_log" "$lock"
 	exit 0
 fi
 
