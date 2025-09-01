@@ -31,15 +31,15 @@ EOF
 
 run_job ()
 {
-	# TODO
-
+	echo "Running job"
 	return 0
 }
 
 daemon_mode ()
 {
-	onetime_log="/tmp/git-hook-frehttpd-post-receive.log"
+	onetime_log="/tmp/git-hook-freehttpd-post-receive.log"
 	start_date=`date`
+	git_lock="/tmp/freehttpd-git-push-lock"
 
 	rm -f "$onetime_log"
 	exec >> "$onetime_log" 2>&1
@@ -50,14 +50,20 @@ daemon_mode ()
 	echo "Waiting 60 seconds..."
 	sleep 60
 
+	echo 1 > "$git_lock"
+	set -x
+
 	if run_job; then
 		echo "Executed successfully"
+		set +x
 		notify_admin 1 "$start_date"
 	else
 		echo "Execution failed"
+		set +x
 		notify_admin 0 "$start_date"
 	fi
 
+	rm -f "$git_lock"
 	cat "$onetime_log" >> /var/log/git-hook-freehttpd-auto-version-daemon.log
 	rm -f "$onetime_log" "$lock"
 
