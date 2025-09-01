@@ -1,5 +1,3 @@
 #!/bin/sh
 
-echo "Processing commits..."
-echo "OK"
 exit 0
