@@ -1,3 +1,19 @@
 #!/bin/sh
 
+GPG_HOME="/srv/git/trusted-keys"
+
+set -e
+
+read oldrev newrev refname
+
+if [ -z "$GIT_PUSH_CERT_KEY" ] || [ "$GIT_PUSH_CERT_NONCE_STATUS" != "OK" ]; then
+    echo "Invalid push certificate"
+    exit 1
+fi
+
+if test -z "$(gpg --homedir "$GPG_HOME" --list-keys --keyid-format=long 2>/dev/null | grep "$GIT_PUSH_CERT_KEY")"; then
+    echo "Unauthorized push certiciate key ID"
+    exit 1
+fi
+
 exit 0
