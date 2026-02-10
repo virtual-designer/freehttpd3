@@ -1,5 +1,7 @@
 noinst_LIBRARIES = libcore.a
-libcore_a_SOURCES = xpoll.c
+libcore_a_SOURCES = \
+	xpoll.c \
+	xpoll.h
 
 AM_CFLAGS = $(EXPORTED_AM_CFLAGS)
 AM_CPPFLAGS = $(EXPORTED_AM_CPPFLAGS)
