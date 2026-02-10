@@ -16,8 +16,8 @@ enum xpoll_event_type
     XPOLL_IN = EPOLLIN,
     XPOLL_OUT = EPOLLOUT,
 #elif PLATFORM_BSD
-    XPOLL_IN = EVFILT_READ,
-    XPOLL_OUT = EVFILT_WRITE,
+    XPOLL_IN = 1,
+    XPOLL_OUT = 2,
 #else /* not PLATFORM_BSD */
 #   error "This platform is not supported"
 #endif

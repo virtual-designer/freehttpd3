@@ -58,14 +58,14 @@ xpoll_register_fd (struct xpoll *xp, int fd, xevent_type_t events, xevent_opt_t 
     struct kevent ev[2];
     size_t count = 0;
 
-    if (events & EVFILT_READ)
+    if (events & XPOLL_IN)
     {
         EV_SET(&ev[count++], fd, EVFILT_READ, 
                 EV_ADD | (opts & XPOLL_ET ? EV_CLEAR : 0) | 
                 (opts & XPOLL_ONESHOT ? EV_ONESHOT : 0), 0, 0, NULL);
     }
 
-    if (events & EVFILT_WRITE)
+    if (events & XPOLL_OUT)
     {
         EV_SET(&ev[count++], fd, EVFILT_WRITE, 
                 EV_ADD | (opts & XPOLL_ET ? EV_CLEAR : 0) | 
@@ -94,7 +94,7 @@ xpoll_modify_registered_fd (struct xpoll *xp, int fd, xevent_type_t events, xeve
     int rerrno = 0, werrno = 0;
 
     EV_SET(&ev, fd, EVFILT_READ, 
-            (events & EVFILT_READ ? EV_ADD : EV_DELETE) | 
+            (events & XPOLL_IN ? EV_ADD : EV_DELETE) | 
             (opts & XPOLL_ET ? EV_CLEAR : 0) | 
             (opts & XPOLL_ONESHOT ? EV_ONESHOT : 0), 0, 0, NULL);
 
@@ -102,7 +102,7 @@ xpoll_modify_registered_fd (struct xpoll *xp, int fd, xevent_type_t events, xeve
     rerrno = errno;
 
     EV_SET(&ev, fd, EVFILT_WRITE, 
-            (events & EVFILT_WRITE ? EV_ADD : EV_DELETE) | 
+            (events & XPOLL_OUT ? EV_ADD : EV_DELETE) | 
             (opts & XPOLL_ET ? EV_CLEAR : 0) | 
             (opts & XPOLL_ONESHOT ? EV_ONESHOT : 0), 0, 0, NULL);
 
@@ -130,14 +130,14 @@ xpoll_unregister_fd (struct xpoll *xp, int fd, xevent_type_t events, xevent_opt_
     struct kevent ev[2];
     size_t count = 0;
 
-    if (events & EVFILT_READ)
+    if (events & XPOLL_IN)
     {
         EV_SET(&ev[count++], fd, EVFILT_READ, 
                 EV_DELETE | (opts & XPOLL_ET ? EV_CLEAR : 0) | 
                 (opts & XPOLL_ONESHOT ? EV_ONESHOT : 0), 0, 0, NULL);
     }
 
-    if (events & EVFILT_WRITE)
+    if (events & XPOLL_OUT)
     {
         EV_SET(&ev[count++], fd, EVFILT_WRITE, 
                 EV_DELETE | (opts & XPOLL_ET ? EV_CLEAR : 0) | 

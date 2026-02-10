@@ -49,3 +49,4 @@ atconfig
 *.lo
 .libs
 /confpaths.h
+.DS_Store
