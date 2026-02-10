@@ -76,10 +76,10 @@ jobs:
             *.tar.xz
             *.asc
 
-      - uses: actions/attest-build-provenance@v2
-        with:
-          subject-name: build-artifacts.zip
-          subject-digest: sha256:${{ steps.upload.outputs.artifact-digest }}
+#      - uses: actions/attest-build-provenance@v2
+#        with:
+#          subject-name: build-artifacts.zip
+#          subject-digest: sha256:${{ steps.upload.outputs.artifact-digest }}
           
   release:
     runs-on: ubuntu-latest
