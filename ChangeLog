@@ -1,3 +1,201 @@
+10-02-2026  Ar Rakin <rakinar2@osndevs.org>
+
+     [*] ci: fix release workflow job
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+     [*] feat(server): socket creation
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+     [*] style: reformat code
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+10-02-2026  Ar Rakin <rakinar2@onesoftnet.eu.org>
+
+     [*] fix(xpoll): platform-specific bitfield checking issues
+         
+         Signed-off-by: Ar Rakin <rakinar2@onesoftnet.eu.org>
+         
+
+     [*] feat(xpoll): finalize cross platform event handling
+         
+         Signed-off-by: Ar Rakin <rakinar2@onesoftnet.eu.org>
+         
+
+     [*] feat(xpoll): finalize cross platform event handling
+         
+         Signed-off-by: Ar Rakin <rakinar2@onesoftnet.eu.org>
+         
+
+     [*] ci: remove codeql workflow
+         
+         Signed-off-by: Ar Rakin <rakinar2@onesoftnet.eu.org>
+         
+
+     [*] ci: remove attestation
+         
+         Signed-off-by: Ar Rakin <rakinar2@onesoftnet.eu.org>
+         
+
+     [*] build: fix dist creation issues
+         
+         Signed-off-by: Ar Rakin <rakinar2@onesoftnet.eu.org>
+         
+
+     [*] build: fix dist creation issues
+         
+         Signed-off-by: Ar Rakin <rakinar2@onesoftnet.eu.org>
+         
+
+     [*] chore: add misc files
+         
+         Signed-off-by: Ar Rakin <rakinar2@onesoftnet.eu.org>
+         
+
+     [*] ci: fix build workflow
+         
+         Signed-off-by: Ar Rakin <rakinar2@onesoftnet.eu.org>
+         
+
+     [*] feat!: initial commit of v3
+         
+         Signed-off-by: Ar Rakin <rakinar2@onesoftnet.eu.org>
+         
+
+13-09-2025  Ar Rakin <rakinar2@osndevs.org>
+
+     [*] chore: add .mailmap
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+01-09-2025  Ar Rakin <rakinar2@onesoftnet.eu.org>
+
+     [*] maint: update hooks
+         
+         Signed-off-by: Ar Rakin <rakinar2@onesoftnet.eu.org>
+         
+
+     [*] chore: test push
+         
+
+     [*] maint: add push certificate requirement
+         
+         Signed-off-by: Ar Rakin <rakinar2@onesoftnet.eu.org>
+         
+
+     [*] maint: improve git hooks and support better scheduled jobs
+         
+         Signed-off-by: Ar Rakin <rakinar2@onesoftnet.eu.org>
+         
+
+29-08-2025  Ar Rakin <rakinar2@onesoftnet.eu.org>
+
+     [*] chore: test pushes
+         
+         Signed-off-by: Ar Rakin <rakinar2@onesoftnet.eu.org>
+         
+
+     [*] chore: test pushes
+         
+         Signed-off-by: Ar Rakin <rakinar2@onesoftnet.eu.org>
+         
+
+     [*] chore: test pushes
+         
+         Signed-off-by: Ar Rakin <rakinar2@onesoftnet.eu.org>
+         
+
+     [*] chore: test pushes
+         
+         Signed-off-by: Ar Rakin <rakinar2@onesoftnet.eu.org>
+         
+
+     [*] chore: test pushes
+         
+         Signed-off-by: Ar Rakin <rakinar2@onesoftnet.eu.org>
+         
+
+     [*] chore: test pushes
+         
+         Signed-off-by: Ar Rakin <rakinar2@onesoftnet.eu.org>
+         
+
+27-08-2025  Ar Rakin <rakinar2@onesoftnet.eu.org>
+
+     [*] maint: fix date handling in hooks
+         
+         Signed-off-by: Ar Rakin <rakinar2@onesoftnet.eu.org>
+         
+
+     [*] maint: fix date handling in hooks
+         
+         Signed-off-by: Ar Rakin <rakinar2@onesoftnet.eu.org>
+         
+
+     [*] maint: attach log file in post-receive hook
+         
+         Signed-off-by: Ar Rakin <rakinar2@onesoftnet.eu.org>
+         
+
+     [*] maint: fix error handling in post-receive hook
+         
+         Signed-off-by: Ar Rakin <rakinar2@onesoftnet.eu.org>
+         
+
+     [*] maint: update post-receive hook
+         
+         Signed-off-by: Ar Rakin <rakinar2@onesoftnet.eu.org>
+         
+
+     [*] build(git-version-gen): default to git tag version strategy
+         
+         Signed-off-by: Ar Rakin <rakinar2@onesoftnet.eu.org>
+         
+
+23-08-2025  Ar Rakin <rakinar2@onesoftnet.eu.org>
+
+     [*] maint(git:hooks): add a todo message
+         
+         Signed-off-by: Ar Rakin <rakinar2@onesoftnet.eu.org>
+         
+
+16-08-2025  Ar Rakin <rakinar2@onesoftnet.eu.org>
+
+     [*] maint: trigger hook
+         
+         Signed-off-by: Ar Rakin <rakinar2@onesoftnet.eu.org>
+         
+
+     [*] maint: add git-post-receive script
+         
+         Signed-off-by: Ar Rakin <rakinar2@onesoftnet.eu.org>
+         
+
+     [*] chore: add maintenance scripts
+         
+         Signed-off-by: Ar Rakin <rakinar2@onesoftnet.eu.org>
+         
+
+11-08-2025  Ar Rakin <rakinar2@onesoftnet.eu.org>
+
+     [*] style: reformat file
+         
+         Signed-off-by: Ar Rakin <rakinar2@onesoftnet.eu.org>
+         
+
+07-08-2025  Conventional Release Action <rakinar2@onesoftnet.eu.org>
+
+     [*] release: v2.4.0 [skip ci]
+         
+         Signed-off-by: Conventional Release Action <rakinar2@onesoftnet.eu.org>
+         
+
 07-08-2025  Ar Rakin <rakinar2@onesoftnet.eu.org>
 
      [*] feat(freehttpd.c): add command-line option parsing support
