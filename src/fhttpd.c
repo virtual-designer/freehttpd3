@@ -4,6 +4,6 @@
 int
 main (void)
 {
-    puts("Hello world");
-    return EXIT_SUCCESS;
+	puts ("Hello world");
+	return EXIT_SUCCESS;
 }
