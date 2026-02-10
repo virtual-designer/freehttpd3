@@ -1,7 +1,5 @@
 SUBDIRS = core utils
 
-AM_CPPFLAGS = -Iabc -I$(abs_srcdir)
-
 bin_PROGRAMS = freehttpd
 freehttpd_SOURCES = fhttpd.c
 freehttpd_LDADD = core/libcore.a
