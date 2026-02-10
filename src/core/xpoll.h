@@ -25,7 +25,7 @@ enum xpoll_event_type
 
 enum xpoll_event_option
 {
-    XPOLL_ET,
+    XPOLL_ET = 1,
     XPOLL_ONESHOT,
 };
 
