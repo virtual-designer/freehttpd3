@@ -7,6 +7,10 @@
         "CONFPATHS",
         "dirstamp",
         "distclean",
+        "EPOLLET",
+        "EPOLLIN",
+        "EPOLLONESHOT",
+        "EPOLLOUT",
         "esyscmd",
         "freehttpd",
         "genchangelog",
@@ -14,7 +18,12 @@
         "nodist",
         "noinst",
         "PREREQ",
+        "rerr",
+        "rerrno",
         "SUBDIRS",
+        "werr",
+        "werrno",
+        "xevent",
         "XPOLL"
     ]
 }

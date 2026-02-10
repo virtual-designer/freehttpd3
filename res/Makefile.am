@@ -77,5 +77,5 @@ resources.h: $(RESOURCES)
 	echo 'extern const size_t global_resources_size;' >> $@; \
 	echo '#endif /* GENERATED_RESOURCE_H */' >> $@;
 
-clean-local:
+distclean-local:
 	rm -rf .deps

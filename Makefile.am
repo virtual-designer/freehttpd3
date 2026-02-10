@@ -32,7 +32,7 @@ confpaths.h:
 			echo "#endif /* CONFPATHS_H */"; \
 		} > $@
 
-vcs-clean: clean
+vcs-clean: distclean
 	for dir in $(SUBDIRS) .; do \
 		rm -rf \
 			$$dir/autom4te.cache \
@@ -63,6 +63,7 @@ check-valgrind-benchmark: all
 
 distclean-local:
 	rm -f .tarball-version
+	rm -rf .deps
 
 changelog:
 	@echo "  UPDATE   ChangeLog" && \
@@ -85,6 +86,3 @@ dist-fhttpd-sign: dist-fhttpd
 		echo "  SIGN     $(distdir).$$format"; \
 		$(GPG) --batch --yes -a -b --local-user $(GPG_LOCAL_USER) "$(distdir).$$format"; \
 	done
-
-clean-local:
-	rm -rf .deps
