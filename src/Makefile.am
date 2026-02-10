@@ -1,8 +1,8 @@
-SUBDIRS = core utils
+SUBDIRS = core hash utils
 
 bin_PROGRAMS = freehttpd
 freehttpd_SOURCES = fhttpd.c
-freehttpd_LDADD = core/libcore.a
+freehttpd_LDADD = core/libcore.a hash/libhash.a
 
 export EXPORTED_AM_CFLAGS =
 export EXPORTED_AM_LDFLAGS =

@@ -17,26 +17,26 @@
  * along with OSN freehttpd.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef FHTTPD_PLATFORM_H
-#define FHTTPD_PLATFORM_H
+#ifndef FHTTPD_SERVER_H
+#define FHTTPD_SERVER_H
 
-#define PLATFORM_LINUX 0
-#define PLATFORM_BSD 0
-#define PLATFORM_UNKNOWN 0
+#include <stdlib.h>
+#include <stdbool.h>
 
-#if defined(__linux__)
-#	undef PLATFORM_LINUX
-#	define PLATFORM_LINUX 1
-#	define PLATFORM "GNU/Linux"
-#elif defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)      \
-	|| defined(__DragonFly__) || defined(__APPLE__)
-#	undef PLATFORM_BSD
-#	define PLATFORM_BSD 1
-#	define PLATFORM "BSD"
-#else /* not defined(__linux__) */
-#	undef PLATFORM_UNKNOWN
-#	define PLATFORM_UNKNOWN 1
-#	define PLATFORM "Unknown"
-#endif /* defined(__linux__) */
+#include "core/config.h"
+#include "utils/types.h"
+#include "xpoll.h"
 
-#endif /* FHTTPD_PLATFORM_H */
+struct fh_server
+{
+	struct xpoll *xp;
+	struct fh_config *config;
+	fd_t *srv_sockets;
+	size_t srv_socket_count;
+};
+
+struct fh_server *fh_server_create (struct fh_config *config);
+void fh_server_destroy (struct fh_server *server);
+bool fh_server_create_sockets (struct fh_server *server);
+
+#endif /* FHTTPD_SERVER_H */

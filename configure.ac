@@ -60,6 +60,7 @@ AC_CONFIG_FILES([Makefile
                  res/Makefile 
                  src/Makefile
                  src/core/Makefile
+                 src/hash/Makefile
                  src/utils/Makefile])
 AC_OUTPUT
 PRINT_SUMMARY

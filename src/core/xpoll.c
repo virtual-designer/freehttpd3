@@ -1,5 +1,25 @@
+/*
+ * This file is part of OSN freehttpd.
+ *
+ * Copyright (C) 2025-2026  OSN Developers.
+ *
+ * OSN freehttpd is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * OSN freehttpd is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with OSN freehttpd.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include "xpoll.h"
 #include "utils/platform.h"
+
 #include <errno.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -7,10 +27,10 @@
 #include <unistd.h>
 
 #if PLATFORM_LINUX
-	#include <sys/epoll.h>
+#	include <sys/epoll.h>
 #elif PLATFORM_BSD
-	#include <sys/event.h>
-	#include <sys/time.h>
+#	include <sys/event.h>
+#	include <sys/time.h>
 #endif /* PLATFORM_LINUX */
 
 struct xpoll *
@@ -26,7 +46,7 @@ xpoll_create (void)
 #elif PLATFORM_BSD
 	xp->fd = kqueue ();
 #else /* not PLATFORM_BSD */
-	#error "This platform is not supported"
+#	error "This platform is not supported"
 #endif /* PLATFORM_LINUX */
 
 	if (xp->fd < 0)
@@ -42,6 +62,7 @@ void
 xpoll_destroy (struct xpoll *xp)
 {
 	close (xp->fd);
+	free (xp);
 }
 
 int
@@ -78,7 +99,7 @@ xpoll_register_fd (struct xpoll *xp, int fd, xevent_type_t events,
 
 	return kevent (xp->fd, ev, count, NULL, 0, NULL);
 #else /* not PLATFORM_BSD */
-	#error "This platform is not supported"
+#	error "This platform is not supported"
 #endif /* PLATFORM_LINUX */
 }
 
@@ -125,7 +146,7 @@ xpoll_modify_registered_fd (struct xpoll *xp, int fd, xevent_type_t events,
 
 	return 0;
 #else /* not PLATFORM_BSD */
-	#error "This platform is not supported"
+#	error "This platform is not supported"
 #endif /* PLATFORM_LINUX */
 }
 
@@ -157,7 +178,7 @@ xpoll_unregister_fd (struct xpoll *xp, int fd, xevent_type_t events,
 
 	return kevent (xp->fd, ev, count, NULL, 0, NULL);
 #else /* not PLATFORM_BSD */
-	#error "This platform is not supported"
+#	error "This platform is not supported"
 #endif /* PLATFORM_LINUX */
 }
 
@@ -179,6 +200,6 @@ xpoll_wait (struct xpoll *xp, xevent_t *events, int max_events, int timeout)
 	return kevent (xp->fd, NULL, 0, (struct kevent *) events, max_events,
 				   timeout >= 0 ? &tspec : NULL);
 #else /* not PLATFORM_BSD */
-	#error "This platform is not supported"
+#	error "This platform is not supported"
 #endif
 }

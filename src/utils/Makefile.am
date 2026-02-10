@@ -1,4 +1,4 @@
-noinst_HEADERS = platform.h
+noinst_HEADERS = platform.h types.h
 
 AM_CFLAGS = $(EXPORTED_AM_CFLAGS)
 AM_CPPFLAGS = $(EXPORTED_AM_CPPFLAGS)

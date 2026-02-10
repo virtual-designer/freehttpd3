@@ -1,7 +1,11 @@
 noinst_LIBRARIES = libcore.a
 libcore_a_SOURCES = \
 	xpoll.c \
-	xpoll.h
+	xpoll.h \
+	server.c \
+	server.h \
+	config.c \
+	config.h
 
 AM_CFLAGS = $(EXPORTED_AM_CFLAGS)
 AM_CPPFLAGS = $(EXPORTED_AM_CPPFLAGS)
