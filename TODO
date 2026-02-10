@@ -1,0 +1,14 @@
+#                   -*- Org -*-
+
+#+TITLE: TODOs for freehttpd
+
+# Local Variables:
+# org-use-sub-superscripts: nil
+# org-export-with-sub-superscripts: nil
+# End:
+
+* TODO [#A] ~http1_request.c~: parse query strings
+* TODO ~server~: default index file
+* TODO ~autoindex~: parent directory link icon
+* TODO ~http1~: keep-alive connections
+* TODO ~module~: ~md5.c~
