@@ -22,17 +22,17 @@ jobs:
           sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-14 500
           gcc --version
 
-      - name: Generate Configuration Files
-        run: |
-          echo 'root = "'$(pwd)'/conf";' > conf/fhttpd.conf
-          echo '' >> conf/fhttpd.conf
-          echo 'include_optional "conf.d/*.conf";' >> conf/fhttpd.conf
-          echo 'include_optional "hosts.d/*.conf";' >> conf/fhttpd.conf
+#      - name: Generate Configuration Files
+#        run: |
+#          echo 'root = "'$(pwd)'/conf";' > conf/fhttpd.conf
+#          echo '' >> conf/fhttpd.conf
+#          echo 'include_optional "conf.d/*.conf";' >> conf/fhttpd.conf
+#          echo 'include_optional "hosts.d/*.conf";' >> conf/fhttpd.conf
 
       - name: Build
         run: |
           ./bootstrap
-          ./configure CC=/usr/bin/gcc-14 --prefix=$(pwd)/build --disable-silent-rules --enable-optimizations --enable-mod-all
+          ./configure CC=/usr/bin/gcc-14 --prefix=$(pwd)/build --disable-silent-rules
           make -j$(nproc)
           make install
 
