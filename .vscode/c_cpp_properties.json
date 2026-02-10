@@ -8,6 +8,15 @@
             "cStandard": "gnu99",
             "cppStandard": "gnu++17",
             "intelliSenseMode": "linux-gcc-x64"
+        },
+        {
+            "name": "Mac",
+            "includePath": ["${workspaceFolder}/**"],
+            "defines": ["_POSIX_C_SOURCE=200809L", "true=1", "false=0", "HAVE_RESOURCES", "auto=__auto_type", "HAVE_CONFIG_H", "_VALGRIND", "HAVE_CONFPATHS_H"],
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "gnu99",
+            "cppStandard": "gnu++17",
+            "intelliSenseMode": "macos-clang-arm64"
         }
     ],
     "version": 4

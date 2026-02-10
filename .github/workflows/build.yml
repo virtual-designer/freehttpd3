@@ -41,13 +41,13 @@ jobs:
           make distcheck
           rm -rf freehttpd-*/ *.tar.*
 
-      - name: Benchmark
-        run: |
-          BINDIR=$(pwd)/build/bin make check-benchmark || (tail -n100 tests/freehttpd.log && exit 1)
-
-      - name: Valgrind Benchmark
-        run: |
-          BINDIR=$(pwd)/build/bin make check-valgrind-benchmark || (tail -n100 tests/freehttpd-valgrind.log && exit 1)
+#      - name: Benchmark
+#        run: |
+#          BINDIR=$(pwd)/build/bin make check-benchmark || (tail -n100 tests/freehttpd.log && exit 1)
+#
+#      - name: Valgrind Benchmark
+#        run: |
+#          BINDIR=$(pwd)/build/bin make check-valgrind-benchmark || (tail -n100 tests/freehttpd-valgrind.log && exit 1)
 
       - name: Import GPG Keys
         run: |

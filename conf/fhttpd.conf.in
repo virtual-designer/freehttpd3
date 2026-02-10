@@ -1,4 +1,0 @@
-root = "@sysconfdir@/freehttpd";
-
-include_optional "conf.d/*.conf";
-include_optional "hosts.d/*.conf";

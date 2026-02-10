@@ -3,7 +3,7 @@
 #
 # This file is part of OSN freehttpd.
 #
-# Copyright (C) 2025  OSN Developers.
+# Copyright (C) 2025-2026  OSN Developers.
 #
 # OSN freehttpd is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published by
@@ -18,14 +18,14 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with OSN freehttpd.  If not, see <https://www.gnu.org/licenses/>.
 
-RESOURCES = index_start.html index_end.html error.html
+RESOURCES = html/error.html
 
 EXTRA_DIST = \
 	$(RESOURCES) \
-	freehttpd.png \
-	freehttpd_pb.png \
-	freehttpd_web.png \
-	freehttpd_http.png \
+	logos/freehttpd.png \
+	logos/freehttpd_pb.png \
+	logos/freehttpd_web.png \
+	logos/freehttpd_http.png \
 	icons/file.png \
 	icons/folder.png \
 	icons/image.png \
@@ -44,19 +44,19 @@ resources.c: $(RESOURCES) resources.h
 	for res in $(RESOURCES); do \
 	    name=$$(basename $$res | sed "s/\./_/g"); \
 		xxd -n "resource_$$name" -i "$(srcdir)/$$res" \
-			| sed 's/unsigned int/__attribute__\(\(section\(".rodata"\)\)\) const size_t/g' \
-			| sed 's/unsigned char/__attribute__\(\(section\(".rodata"\)\)\) const char/g' \
+			| sed 's/unsigned int/const size_t/g' \
+			| sed 's/unsigned char/const char/g' \
 			| sed 's/};/, 0x00 };/g' >> $@; \
 	done; \
-	echo "__attribute__((section(\".rodata\"))) const struct resource_file global_resources[] = {" >> $@; \
+	echo "const struct resource_file global_resources[] = {" >> $@; \
 	for res in $(RESOURCES); do \
 	    name=$$(basename $$res | sed "s/\./_/g"); \
 		name_len=$$(echo "$$name" | wc -c | sed 's/ //g'); \
-		size=$$(stat -c %s "$(srcdir)/$$res"); \
+		size=$$(wc -c < "$(srcdir)/$$res"); \
 		echo "  { .name = \"resource_$$name\", .name_len = $$name_len, .data = resource_$$name, .data_len = $$size, }," >> $@; \
 	done; \
 	echo "};" >> $@; \
-	echo '__attribute__((section(".rodata"))) const size_t global_resources_size = sizeof(global_resources) / sizeof(global_resources[0]);' >> $@;
+	echo 'const size_t global_resources_size = sizeof(global_resources) / sizeof(global_resources[0]);' >> $@;
 
 resources.h: $(RESOURCES)
 	@echo "  GEN      resources.h" && echo '#ifndef GENERATED_RESOURCE_H' > $@; \
@@ -70,11 +70,11 @@ resources.h: $(RESOURCES)
 	echo '};' >> $@; \
 	for res in $(RESOURCES); do \
 	    name=$$(basename $$res | sed "s/\./_/g"); \
-		echo '__attribute__((section(".rodata"))) extern const size_t resource_'$$name'_len;' >> $@; \
-		echo '__attribute__((section(".rodata"))) extern const char resource_'$$name'[];' >> $@; \
+		echo 'extern const size_t resource_'$$name'_len;' >> $@; \
+		echo 'extern const char resource_'$$name'[];' >> $@; \
 	done; \
-	echo '__attribute__((section(".rodata"))) extern const struct resource_file global_resources[];' >> $@; \
-	echo '__attribute__((section(".rodata"))) extern const size_t global_resources_size;' >> $@; \
+	echo 'extern const struct resource_file global_resources[];' >> $@; \
+	echo 'extern const size_t global_resources_size;' >> $@; \
 	echo '#endif /* GENERATED_RESOURCE_H */' >> $@;
 
 clean-local:
