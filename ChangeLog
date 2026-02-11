@@ -1,3 +1,25 @@
+11-02-2026  Ar Rakin <rakinar2@onesoftnet.eu.org>
+
+     [*] merge: branch 'main' of github.com:virtual-designer/freehttpd3
+         
+
+     [*] fix: darwin bugs
+         
+         Signed-off-by: Ar Rakin <rakinar2@onesoftnet.eu.org>
+         
+
+11-02-2026  Conventional Release Action <rakinar2@onesoftnet.eu.org>
+
+     [*] release: v3.2.0 [skip ci]
+         
+         Signed-off-by: Conventional Release Action <rakinar2@onesoftnet.eu.org>
+         
+
+     [*] release: v3.1.0 [skip ci]
+         
+         Signed-off-by: Conventional Release Action <rakinar2@onesoftnet.eu.org>
+         
+
 11-02-2026  Ar Rakin <rakinar2@osndevs.org>
 
      [*] merge: branch 'main' of github.com:virtual-designer/freehttpd3
@@ -11,13 +33,6 @@
      [*] feat: worker support
          
          Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
-         
-
-11-02-2026  Conventional Release Action <rakinar2@onesoftnet.eu.org>
-
-     [*] release: v3.1.0 [skip ci]
-         
-         Signed-off-by: Conventional Release Action <rakinar2@onesoftnet.eu.org>
          
 
 10-02-2026  Conventional Release Action <rakinar2@onesoftnet.eu.org>
