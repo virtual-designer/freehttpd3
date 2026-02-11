@@ -61,16 +61,6 @@ jobs:
 #        run: |
 #          BINDIR=$(pwd)/build/bin make check-valgrind-benchmark || (tail -n100 tests/freehttpd-valgrind.log && exit 1)
 
-      - name: Import GPG Keys
-        run: |
-          echo "${{ secrets.COMMIT_GPG_KEY }}" > .private.key
-          gpg --import .private.key
-          rm -f .private.key
-
-      - name: Create Release Archives
-        run: |
-          GPG_LOCAL_USER=6AE7B08C68169452 make dist-fhttpd-sign
-
       - name: Upload Artifacts
         id: upload
         uses: actions/upload-artifact@v4
@@ -101,12 +91,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: build-artifacts-ubuntu-latest.zip
-          path: build-artifacts
-
       - name: Automatic versioning
         id: automatic_versioning
         uses: onesoft-sudo/conventional-release-action@main
@@ -121,6 +105,18 @@ jobs:
           changelog-format: plain
           allowed-commit-types: feat,fix,refactor,perf,ci,build,test,revert,chore,release,deps
 
+      - name: Import GPG Keys
+        run: |
+          echo "${{ secrets.COMMIT_GPG_KEY }}" > .private.key
+          gpg --import .private.key
+          rm -f .private.key
+
+      - name: Create Release Archives
+        run: |
+          ./bootstrap
+          ./configure --prefix=$(pwd)/build --disable-silent-rules
+          GPG_LOCAL_USER=6AE7B08C68169452 make dist-fhttpd-sign
+      
       - name: Create release
         if: ${{ steps.automatic_versioning.outputs.tag != '' }}
         uses: ncipollo/release-action@v1
@@ -129,8 +125,8 @@ jobs:
           name: ${{ steps.automatic_versioning.outputs.tag }}
           body: ${{ steps.automatic_versioning.outputs.release_notes }}
           artifacts: |
-             build-artifacts/*.shar.gz,
-             build-artifacts/*.tar.gz,
-             build-artifacts/*.tar.xz,
-             build-artifacts/*.tar.bz2,
-             build-artifacts/*.asc
+            ./*.shar.gz,
+            ./*.tar.gz,
+            ./*.tar.xz,
+            ./*.tar.bz2,
+            ./*.asc
