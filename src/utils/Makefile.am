@@ -1,4 +1,9 @@
-noinst_HEADERS = platform.h types.h
+noinst_LIBRARIES = libutils.a
+libutils_a_SOURCES = \
+	datetime.c \
+	datetime.h \
+	utils.c \
+	utils.h
 
 AM_CFLAGS = $(EXPORTED_AM_CFLAGS)
 AM_CPPFLAGS = $(EXPORTED_AM_CPPFLAGS)

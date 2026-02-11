@@ -18,7 +18,7 @@
  */
 
 #include "xpoll.h"
-#include "utils/platform.h"
+#include "platform.h"
 
 #include <errno.h>
 #include <stdbool.h>

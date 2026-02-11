@@ -17,7 +17,9 @@
  * along with OSN freehttpd.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "utils/platform.h"
+#define FH_LOG_MODULE_NAME "server"
+
+#include "platform.h"
 
 #ifdef PLATFORM_LINUX
 #	define _GNU_SOURCE
@@ -28,13 +30,21 @@
 #include <netinet/in.h>
 #include <stdbool.h>
 #include <stddef.h>
-#include <unistd.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <unistd.h>
+#include <signal.h>
 
+#include "compat.h"
 #include "core/config.h"
 #include "hash/itable.h"
+#include "log/log.h"
 #include "server.h"
+#include "worker.h"
+
+static bool should_terminate = false;
 
 struct fh_server *
 fh_server_create (struct fh_config *config)
@@ -64,7 +74,19 @@ fh_server_destroy (struct fh_server *server)
 	for (size_t i = 0; i < server->srv_socket_count; i++)
 		close (server->srv_sockets[i]);
 
+	fh_pr_info ("Closed %zu sockets", server->srv_socket_count);
 	free (server->srv_sockets);
+
+	if (!server->is_worker)
+	{
+		for (size_t i = 0; i < server->worker_count; i++)
+		{
+			fh_pr_info ("Killing worker process: %zu [%d]", i, server->workers[i]);
+			kill (server->workers[i], SIGTERM);
+		}
+	}
+
+	free (server->workers);
 	fh_config_free (server->config);
 	free (server);
 }
@@ -82,7 +104,7 @@ fh_server_create_socket (struct fh_server *server, int domain, uint16_t port)
 		< 0)
 		goto fh_server_create_socket_end;
 
-#if PLATFORM_LINUX
+#if PLATFORM_LINUX || PLATFORM_BSD
 	if (setsockopt (sockfd, SOL_SOCKET, SO_REUSEPORT, &(int) { 1 },
 					sizeof (int))
 		< 0)
@@ -137,7 +159,7 @@ fh_server_create_socket_end:
 	return -1;
 }
 
-bool
+static bool
 fh_server_create_sockets (struct fh_server *server)
 {
 	struct itable *table = itable_create (4096);
@@ -167,7 +189,8 @@ fh_server_create_sockets (struct fh_server *server)
 			}
 
 			server->srv_sockets
-				= realloc (server->srv_sockets, sizeof (fd_t) * (server->srv_socket_count + 1));
+				= realloc (server->srv_sockets,
+						   sizeof (fd_t) * (server->srv_socket_count + 1));
 
 			if (!server->srv_sockets)
 			{
@@ -175,6 +198,7 @@ fh_server_create_sockets (struct fh_server *server)
 				return false;
 			}
 
+			fh_pr_info ("Creating socket for port: %i [IPv4]", port);
 			fd_t sockfd = fh_server_create_socket (server, AF_INET, port);
 
 			if (sockfd < 0)
@@ -190,5 +214,80 @@ fh_server_create_sockets (struct fh_server *server)
 	}
 
 	itable_destroy (table);
+	return true;
+}
+
+static bool
+fh_server_fork_workers (struct fh_server *server)
+{
+	fh_pr_info ("Spawning %zu workers", server->config->worker_count);
+	server->workers = calloc (server->config->worker_count, sizeof (pid_t));
+
+	if (!server->workers)
+	{
+		fh_pr_info ("Memory allocation error: %s", strerror (errno));
+		return false;
+	}
+
+	for (size_t i = 0; i < server->config->worker_count; i++)
+	{
+		pid_t pid = fork ();
+
+		if (pid < 0)
+		{
+			fh_pr_info ("Failed to spawn worker #%zu: %s", i, strerror (errno));
+			return false;
+		}
+
+		if (pid == 0)
+		{
+			server->is_worker = true;
+			server->current_worker_index = i;
+			fh_log_set_worker_pid (getpid ());
+			fh_worker_start (server);
+			_exit (EXIT_FAILURE);
+			return false;
+		}
+
+		server->workers[server->worker_count++] = pid;
+		fh_pr_info ("Spawned worker #%zu [%d]", i, pid);
+	}
+
+	return true;
+}
+
+static void
+handle_exit_signal (int signum __attribute__((unused)))
+{
+	should_terminate = true;
+	fh_pr_warn ("Signal: %s", strsignal (signum));
+}
+
+bool
+fh_server_start (struct fh_server *server)
+{
+	if (!fh_server_create_sockets (server))
+		return false;
+
+	struct sigaction act;
+
+	sigemptyset (&act.sa_mask);
+	act.sa_handler = &handle_exit_signal;
+	act.sa_flags = SA_RESTART;
+
+	if (sigaction (SIGINT, &act, NULL) < 0 || sigaction (SIGTERM, &act, NULL) < 0)
+		return false;
+
+	if (!fh_server_fork_workers (server))
+		return false;
+
+	while (true)
+	{
+		pause ();
+
+		if (should_terminate)
+			return true;
+	}
+	
 	return true;
 }

@@ -20,7 +20,7 @@
 #ifndef FHTTPD_XPOLL_H
 #define FHTTPD_XPOLL_H
 
-#include "utils/platform.h"
+#include "platform.h"
 
 #if PLATFORM_LINUX
 	#include <sys/epoll.h>

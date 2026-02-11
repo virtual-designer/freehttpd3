@@ -14,6 +14,7 @@ fh_config_free (struct fh_config *config)
             free (config->hosts[i].hostnames[j]);
 
         free (config->hosts[i].hostnames);
+        free (config->hosts[i].hostname_ports);
     }
 
     free (config->hosts);

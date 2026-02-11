@@ -5,7 +5,9 @@ libcore_a_SOURCES = \
 	server.c \
 	server.h \
 	config.c \
-	config.h
+	config.h \
+	worker.c \
+	worker.h
 
 AM_CFLAGS = $(EXPORTED_AM_CFLAGS)
 AM_CPPFLAGS = $(EXPORTED_AM_CPPFLAGS)

@@ -1,14 +1,17 @@
-SUBDIRS = core hash utils
+SUBDIRS = include core hash log utils
 
 bin_PROGRAMS = freehttpd
 freehttpd_SOURCES = fhttpd.c
-freehttpd_LDADD = core/libcore.a hash/libhash.a
+freehttpd_LDADD = \
+	core/libcore.a \
+	hash/libhash.a \
+	log/liblog.a \
+	utils/libutils.a
 
 export EXPORTED_AM_CFLAGS =
 export EXPORTED_AM_LDFLAGS =
 export EXPORTED_AM_CPPFLAGS = \
 	-I$(abs_srcdir)/include \
-	-I$(abs_srcdir)/utils \
 	-I$(abs_srcdir) \
 	-I$(top_builddir)/res \
 	-DHAVE_RESOURCES \
