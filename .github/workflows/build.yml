@@ -75,7 +75,7 @@ jobs:
         id: upload
         uses: actions/upload-artifact@v4
         with:
-          name: build-artifacts.zip
+          name: build-artifacts-${{ matrix.os }}.zip
           path: |
             build/
             tests/freehttpd-valgrind.log
@@ -104,7 +104,7 @@ jobs:
       - name: Download Artifacts
         uses: actions/download-artifact@v4
         with:
-          name: build-artifacts.zip
+          name: build-artifacts-ubuntu-latest.zip
           path: build-artifacts
 
       - name: Automatic versioning
