@@ -1,8 +1,23 @@
 11-02-2026  Ar Rakin <rakinar2@osndevs.org>
 
+     [*] merge: branch 'main' of github.com:virtual-designer/freehttpd3
+         
+
+     [*] feat: xpoll wait and connection accept mechanism
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
      [*] feat: worker support
          
          Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+11-02-2026  Conventional Release Action <rakinar2@onesoftnet.eu.org>
+
+     [*] release: v3.1.0 [skip ci]
+         
+         Signed-off-by: Conventional Release Action <rakinar2@onesoftnet.eu.org>
          
 
 10-02-2026  Conventional Release Action <rakinar2@onesoftnet.eu.org>
