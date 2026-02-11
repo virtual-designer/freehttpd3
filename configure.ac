@@ -53,6 +53,7 @@ CHECK_PROG_GPG
 # Checks for header files.
 
 # Checks for typedefs, structures, and compiler characteristics.
+AC_CHECK_FUNCS([accept4])
 
 # Checks for library functions.
 

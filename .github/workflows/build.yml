@@ -10,17 +10,29 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Tools
+      - name: Install Tools (Ubuntu)
         run: |
           sudo apt update
           sudo apt install -y xxd valgrind apache2-utils gcc-14 build-essential siege
           sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-14 500
           gcc --version
+        if: matrix.os == 'ubuntu-latest'
+      
+      - name: Install Tools (Darwin)
+        run: |
+          brew install xxd valgrind
+          gcc --version
+        if: matrix.os == 'macos-latest'
 
 #      - name: Generate Configuration Files
 #        run: |
@@ -32,7 +44,7 @@ jobs:
       - name: Build
         run: |
           ./bootstrap
-          ./configure CC=/usr/bin/gcc-14 --prefix=$(pwd)/build --disable-silent-rules
+          ./configure --prefix=$(pwd)/build --disable-silent-rules
           make -j$(nproc)
           make install
 

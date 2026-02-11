@@ -13,6 +13,7 @@
         "EPOLLOUT",
         "esyscmd",
         "freehttpd",
+        "FUNCS",
         "genchangelog",
         "ifndef",
         "nodist",

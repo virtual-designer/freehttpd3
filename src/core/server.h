@@ -29,11 +29,16 @@
 #include "types.h"
 #include "xpoll.h"
 
+struct sockfd_info
+{
+	int family;
+};
+
 struct fh_server
 {
 	struct xpoll *xp;
 	struct fh_config *config;
-	/* (fd_t) => (bool *) */
+	/* (fd_t) => (struct sockfd_info *) */
 	struct itable *sockfd_table;
 	pid_t *workers;
 	size_t worker_count;

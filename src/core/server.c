@@ -30,6 +30,7 @@
 
 #include <arpa/inet.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <inttypes.h>
 #include <netinet/in.h>
 #include <signal.h>
@@ -74,7 +75,10 @@ fh_server_destroy (struct fh_server *server)
 		xpoll_destroy (server->xp);
 
 	for_each_itable_entry (server->sockfd_table, sockfd)
+	{
 		close ((fd_t) sockfd->key);
+		free (sockfd->data);
+	}
 
 	fh_pr_info ("Closed %" PRIu64 " sockets", server->sockfd_table->count);
 	itable_destroy (server->sockfd_table);
@@ -217,7 +221,19 @@ fh_server_create_sockets (struct fh_server *server)
 				return false;
 			}
 
-			itable_set (server->sockfd_table, (uint64_t) sockfd, (void *) 0x1);
+			struct sockfd_info *info = calloc (1, sizeof (*info));
+
+			if (!info)
+			{
+				int err = errno;
+				close (sockfd);
+				itable_destroy (table);
+				errno = err;
+				return false;
+			}
+
+			info->family = AF_INET;
+			itable_set (server->sockfd_table, (uint64_t) sockfd, info);
 		}
 	}
 
@@ -315,6 +331,89 @@ fh_server_start (struct fh_server *server)
 	return true;
 }
 
+static bool
+fh_server_accept (struct fh_server *server, fd_t server_fd,
+				  const struct sockfd_info *info)
+{
+	size_t err_count = 0;
+
+	while (true)
+	{
+		union
+		{
+			struct sockaddr_in in4;
+			struct sockaddr_in6 in6;
+		} client_addr;
+		bool is_ip6 = info->family == AF_INET6;
+		socklen_t client_addr_len = is_ip6 ? sizeof (struct sockaddr_in6)
+										   : sizeof (struct sockaddr_in);
+		fd_t client_fd;
+
+#ifdef HAVE_ACCEPT4
+		client_fd = accept4 (server_fd, (struct sockaddr *) &client_addr,
+							 &client_addr_len, O_NONBLOCK);
+#else  /* not HAVE_ACCEPT4 */
+		client_fd = accept (server_fd, (struct sockaddr *) &client_addr,
+							&client_addr_len);
+#endif /* HAVE_ACCEPT4 */
+
+		if (client_fd < 0)
+		{
+			if (errno == EINTR)
+				continue;
+
+			if (would_block ())
+				break;
+
+			fh_pr_err ("Unable to accept connection via socket %d [IPv%d]: %s",
+					   server_fd, info->family == AF_INET6 ? 6 : 4,
+					   strerror (errno));
+
+			if (err_count >= 5)
+				break;
+
+			err_count++;
+			continue;
+		}
+
+		err_count = 0;
+
+#ifndef HAVE_ACCEPT4
+		if (!fd_set_nonblocking (client_fd))
+		{
+			close (client_fd);
+			continue;
+		}
+#endif /* HAVE_ACCEPT4 */
+
+		char ip[(is_ip6 ? INET6_ADDRSTRLEN : INET_ADDRSTRLEN) + 1];
+		inet_ntop (info->family,
+				   is_ip6 ? (void *) &client_addr.in6.sin6_addr
+						  : (void *) &client_addr.in4.sin_addr,
+				   ip, is_ip6 ? INET6_ADDRSTRLEN : INET_ADDRSTRLEN);
+		uint16_t port = ntohs (is_ip6 ? client_addr.in6.sin6_port
+									  : client_addr.in4.sin_port);
+
+		fh_pr_info ("Accepted connection: server_fd=%d, client_fd=%d, "
+					"client_addr=%s:%d",
+					server_fd, client_fd, ip, port);
+
+		errno = 0;
+		ssize_t written_size = write (
+			client_fd,
+			"HTTP/1.1 200 OK\r\nServer: freehttpd\r\nContent-Type: "
+			"text/html; charset=\"UTF-8\"\r\nConnection: "
+			"close\r\nContent-Length: 75\r\n\r\n<h1>Hello world from <span "
+			"style=\"color: #007bff;\">freehttpd</span>!</h1>\n\n",
+			194);
+
+		fh_pr_debug ("sz=%li, errmsg=\"%s\"", written_size, strerror (errno));
+		close (client_fd);
+	}
+
+	return true;
+}
+
 bool
 fh_server_wait (struct fh_server *server, bool *should_terminate)
 {
@@ -340,26 +439,13 @@ fh_server_wait (struct fh_server *server, bool *should_terminate)
 		{
 			uint32_t kind = XPOLL_EVENT_KINDS (&events[i]);
 			fd_t fd = XPOLL_EVENT_FD (&events[i]);
+			const struct sockfd_info *info
+				= itable_get (server->sockfd_table, (uint64_t) fd);
 
-			if (itable_contains (server->sockfd_table, (uint64_t) fd)
-				&& kind & XPOLL_IN)
+			if (info && kind & XPOLL_IN)
 			{
-				fh_pr_debug (
-					"New connections are available to accept [socket %i]", fd);
-
-				/* TODO! */
-				while (true)
-				{
-					errno = 0;
-					fd_t client_fd = accept (fd, NULL, NULL);
-
-					if (client_fd < 0 || errno != 0)
-						break;
-
-					fh_pr_debug ("Accepted [socket %i] [client %i]", fd,
-								 client_fd);
-					close (client_fd);
-				}
+				if (!fh_server_accept (server, fd, info))
+					fh_pr_err ("accept failed: %s", strerror (errno));
 
 				continue;
 			}
