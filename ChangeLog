@@ -1,5 +1,16 @@
 11-02-2026  Ar Rakin <rakinar2@onesoftnet.eu.org>
 
+     [*] feat: test release
+         
+
+     [*] merge:1 branch 'main' of github.com:virtual-designer/freehttpd3
+         
+
+     [*] ci: fix build workflows
+         
+         Signed-off-by: Ar Rakin <rakinar2@onesoftnet.eu.org>
+         
+
      [*] ci: fix build workflows
          
          Signed-off-by: Ar Rakin <rakinar2@onesoftnet.eu.org>
@@ -34,6 +45,11 @@
          
 
 11-02-2026  Conventional Release Action <rakinar2@onesoftnet.eu.org>
+
+     [*] release: v3.3.0 [skip ci]
+         
+         Signed-off-by: Conventional Release Action <rakinar2@onesoftnet.eu.org>
+         
 
      [*] release: v3.2.1 [skip ci]
          
