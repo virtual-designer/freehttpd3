@@ -30,7 +30,7 @@ jobs:
       
       - name: Install Tools (Darwin)
         run: |
-          brew install xxd valgrind
+          brew install valgrind
           gcc --version
         if: matrix.os == 'macos-latest'
 
