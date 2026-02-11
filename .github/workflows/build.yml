@@ -27,6 +27,12 @@ jobs:
           sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-14 500
           gcc --version
         if: matrix.os == 'ubuntu-latest'
+      
+      - name: Install Tools (Darwin)
+        run: |
+          brew install automake autoconf
+          gcc --version
+        if: matrix.os == 'macos-latest'
 
 #      - name: Generate Configuration Files
 #        run: |
