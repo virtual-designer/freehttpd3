@@ -25,6 +25,7 @@
 #include <sys/types.h>
 
 #include "core/config.h"
+#include "hash/itable.h"
 #include "types.h"
 #include "xpoll.h"
 
@@ -32,8 +33,8 @@ struct fh_server
 {
 	struct xpoll *xp;
 	struct fh_config *config;
-	fd_t *srv_sockets;
-	size_t srv_socket_count;
+	/* (fd_t) => (bool *) */
+	struct itable *sockfd_table;
 	pid_t *workers;
 	size_t worker_count;
 	size_t current_worker_index;
@@ -43,5 +44,6 @@ struct fh_server
 struct fh_server *fh_server_create (struct fh_config *config);
 void fh_server_destroy (struct fh_server *server);
 bool fh_server_start (struct fh_server *server);
+bool fh_server_wait (struct fh_server *server, bool *should_terminate);
 
 #endif /* FHTTPD_SERVER_H */

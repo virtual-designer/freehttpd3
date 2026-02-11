@@ -38,16 +38,7 @@ fh_worker_start (struct fh_server *server)
 
     fh_pr_info ("Ready for connections");
 
-    while (true)
-    {
-        pause ();
-
-		if (should_terminate)
-		{
-            fh_worker_terminate (server);
-            exit (EXIT_SUCCESS);
-        }
-    }
-
+    fh_server_wait (server, &should_terminate);
+    fh_worker_terminate (server);
     _exit (EXIT_FAILURE);
 }

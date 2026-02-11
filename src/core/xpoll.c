@@ -42,7 +42,7 @@ xpoll_create (void)
 		return NULL;
 
 #if PLATFORM_LINUX
-	xp->fd = epoll_create1 (0);
+	xp->fd = epoll_create1 (EPOLL_CLOEXEC);
 #elif PLATFORM_BSD
 	xp->fd = kqueue ();
 #else /* not PLATFORM_BSD */
@@ -186,7 +186,7 @@ int
 xpoll_wait (struct xpoll *xp, xevent_t *events, int max_events, int timeout)
 {
 #if PLATFORM_LINUX
-	return epoll_wait (xp->fd, (struct epoll_event *) events, max_events,
+	return epoll_wait (xp->fd, &events->linux_ev, max_events,
 					   timeout);
 #elif PLATFORM_BSD
 	struct timespec tspec = { 0 };
@@ -197,7 +197,7 @@ xpoll_wait (struct xpoll *xp, xevent_t *events, int max_events, int timeout)
 		tspec.tv_nsec = (((long) timeout) - (1000L * tspec.tv_sec)) * 1000000L;
 	}
 
-	return kevent (xp->fd, NULL, 0, (struct kevent *) events, max_events,
+	return kevent (xp->fd, NULL, 0, &events->bsd_ev, max_events,
 				   timeout >= 0 ? &tspec : NULL);
 #else /* not PLATFORM_BSD */
 #	error "This platform is not supported"

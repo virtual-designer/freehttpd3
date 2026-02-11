@@ -28,6 +28,7 @@
 #include <arpa/inet.h>
 #include <errno.h>
 #include <netinet/in.h>
+#include <signal.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -35,7 +36,6 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <signal.h>
 
 #include "compat.h"
 #include "core/config.h"
@@ -43,6 +43,8 @@
 #include "log/log.h"
 #include "server.h"
 #include "worker.h"
+
+#define XPOLL_MAX_EVENTS 4096
 
 static bool should_terminate = false;
 
@@ -71,17 +73,18 @@ fh_server_destroy (struct fh_server *server)
 {
 	xpoll_destroy (server->xp);
 
-	for (size_t i = 0; i < server->srv_socket_count; i++)
-		close (server->srv_sockets[i]);
+	for_each_itable_entry (server->sockfd_table, sockfd)
+		close ((fd_t) sockfd->key);
 
-	fh_pr_info ("Closed %zu sockets", server->srv_socket_count);
-	free (server->srv_sockets);
+	fh_pr_info ("Closed %zu sockets", server->sockfd_table->count);
+	itable_destroy (server->sockfd_table);
 
 	if (!server->is_worker)
 	{
 		for (size_t i = 0; i < server->worker_count; i++)
 		{
-			fh_pr_info ("Killing worker process: %zu [%d]", i, server->workers[i]);
+			fh_pr_info ("Killing worker process: %zu [%d]", i,
+						server->workers[i]);
 			kill (server->workers[i], SIGTERM);
 		}
 	}
@@ -168,8 +171,13 @@ fh_server_create_sockets (struct fh_server *server)
 		return false;
 
 	bool data = true;
-	server->srv_sockets = NULL;
-	server->srv_socket_count = 0;
+	server->sockfd_table = itable_create (4096);
+
+	if (!server->sockfd_table)
+	{
+		itable_destroy (table);
+		return false;
+	}
 
 	for (size_t i = 0; i < server->config->host_count; i++)
 	{
@@ -188,16 +196,6 @@ fh_server_create_sockets (struct fh_server *server)
 				return false;
 			}
 
-			server->srv_sockets
-				= realloc (server->srv_sockets,
-						   sizeof (fd_t) * (server->srv_socket_count + 1));
-
-			if (!server->srv_sockets)
-			{
-				itable_destroy (table);
-				return false;
-			}
-
 			fh_pr_info ("Creating socket for port: %i [IPv4]", port);
 			fd_t sockfd = fh_server_create_socket (server, AF_INET, port);
 
@@ -209,7 +207,15 @@ fh_server_create_sockets (struct fh_server *server)
 				return false;
 			}
 
-			server->srv_sockets[server->srv_socket_count++] = sockfd;
+			itable_set (server->sockfd_table, (uint64_t) sockfd, (void *) 0x1);
+
+			if (xpoll_register_fd (server->xp, sockfd, XPOLL_IN, 0) < 0)
+			{
+				int err = errno;
+				itable_destroy (table);
+				errno = err;
+				return false;
+			}
 		}
 	}
 
@@ -257,7 +263,7 @@ fh_server_fork_workers (struct fh_server *server)
 }
 
 static void
-handle_exit_signal (int signum __attribute__((unused)))
+handle_exit_signal (int signum __attribute__ ((unused)))
 {
 	should_terminate = true;
 	fh_pr_warn ("Signal: %s", strsignal (signum));
@@ -275,7 +281,8 @@ fh_server_start (struct fh_server *server)
 	act.sa_handler = &handle_exit_signal;
 	act.sa_flags = SA_RESTART;
 
-	if (sigaction (SIGINT, &act, NULL) < 0 || sigaction (SIGTERM, &act, NULL) < 0)
+	if (sigaction (SIGINT, &act, NULL) < 0
+		|| sigaction (SIGTERM, &act, NULL) < 0)
 		return false;
 
 	if (!fh_server_fork_workers (server))
@@ -288,6 +295,60 @@ fh_server_start (struct fh_server *server)
 		if (should_terminate)
 			return true;
 	}
-	
+
+	return true;
+}
+
+bool
+fh_server_wait (struct fh_server *server, bool *should_terminate)
+{
+	xevent_t events[XPOLL_MAX_EVENTS];
+
+	while (true)
+	{
+		if (*should_terminate)
+			return true;
+
+		int n_fds = xpoll_wait (server->xp, events, XPOLL_MAX_EVENTS, 5000);
+
+		if (n_fds < 0)
+		{
+			if (would_interrupt ())
+				continue;
+
+			fh_pr_err ("xpoll_wait failed: %s", strerror (errno));
+			continue;
+		}
+
+		for (int i = 0; i < n_fds; i++)
+		{
+			uint32_t kind = XPOLL_EVENT_KINDS (&events[i]);
+			fd_t fd = XPOLL_EVENT_FD (&events[i]);
+
+			if (itable_contains (server->sockfd_table, (uint64_t) fd)
+				&& kind & XPOLL_IN)
+			{
+				fh_pr_debug (
+					"New connections are available to accept [socket %i]", fd);
+
+				/* TODO! */
+				while (true)
+				{
+					errno = 0;
+					fd_t client_fd = accept (fd, NULL, NULL);
+
+					if (client_fd < 0 || errno != 0)
+						break;
+
+					fh_pr_debug ("Accepted [socket %i] [client %i]", fd,
+								 client_fd);
+					close (client_fd);
+				}
+
+				continue;
+			}
+		}
+	}
+
 	return true;
 }

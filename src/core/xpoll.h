@@ -1,18 +1,18 @@
 /*
  * This file is part of OSN freehttpd.
- * 
+ *
  * Copyright (C) 2025-2026  OSN Developers.
  *
  * OSN freehttpd is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * OSN freehttpd is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with OSN freehttpd.  If not, see <https://www.gnu.org/licenses/>.
  */
@@ -23,10 +23,10 @@
 #include "platform.h"
 
 #if PLATFORM_LINUX
-	#include <sys/epoll.h>
+#	include <sys/epoll.h>
 #elif PLATFORM_BSD
-	#include <sys/event.h>
-	#include <sys/time.h>
+#	include <sys/event.h>
+#	include <sys/time.h>
 #endif /* PLATFORM_BSD */
 
 enum xpoll_event_type
@@ -38,7 +38,7 @@ enum xpoll_event_type
 	XPOLL_IN = 1,
 	XPOLL_OUT = 2,
 #else /* not PLATFORM_BSD */
-	#error "This platform is not supported"
+#	error "This platform is not supported"
 #endif
 };
 
@@ -63,16 +63,26 @@ union xpoll_event
 #elif PLATFORM_BSD
 	struct kevent bsd_ev;
 #else /* not PLATFORM_BSD */
-	#error "This platform is not supported"
+#	error "This platform is not supported"
 #endif
 };
 
 #if PLATFORM_LINUX
-	#define XPOLL_EVENT_RAW(ev) ((ev)->linux_ev)
+#	define XPOLL_EVENT_RAW(ev) ((ev)->linux_ev)
+#	define XPOLL_EVENT_FD(ev) ((XPOLL_EVENT_RAW (ev)).data.fd)
+#	define XPOLL_EVENT_KINDS(ev) ((XPOLL_EVENT_RAW (ev)).events)
+#	define XPOLL_EVENT_IS_ERR(ev) (XPOLL_EVENT_KINDS(ev) & EPOLLERR)
 #elif PLATFORM_BSD
-	#define XPOLL_EVENT_RAW(ev) ((ev)->bsd_ev)
-#else /* not PLATFORM_BSD */
-	#error "This platform is not supported"
+#	define XPOLL_EVENT_RAW(ev) ((ev)->bsd_ev)
+#	define XPOLL_EVENT_FD(ev) ((int) (XPOLL_EVENT_RAW (ev)).ident)
+#	define XPOLL_EVENT_IS_ERR(ev) ((XPOLL_EVENT_KINDS(ev)).flags & EV_ERROR)
+#	if EVFILT_READ < 0
+#		define XPOLL_EVENT_KINDS(ev) (-(XPOLL_EVENT_RAW (ev)).filter)
+#	else /* not EVFILT_READ < 0 */
+#		define XPOLL_EVENT_KINDS(ev) ((XPOLL_EVENT_RAW (ev)).filter)
+#	endif /* EVFILT_READ < 0 */
+#else	   /* not PLATFORM_BSD */
+#	error "This platform is not supported"
 #endif
 
 typedef union xpoll_event xevent_t;
@@ -85,5 +95,7 @@ int xpoll_unregister_fd (struct xpoll *xp, int fd, xevent_type_t events,
 						 xevent_opt_t opts);
 int xpoll_modify_registered_fd (struct xpoll *xp, int fd, xevent_type_t events,
 								xevent_opt_t opts);
+int xpoll_wait (struct xpoll *xp, xevent_t *events, int max_events,
+				int timeout);
 
 #endif /* FHTTPD_XPOLL_H */
