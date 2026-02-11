@@ -1,3 +1,17 @@
+11-02-2026  Ar Rakin <rakinar2@osndevs.org>
+
+     [*] feat: worker support
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+10-02-2026  Conventional Release Action <rakinar2@onesoftnet.eu.org>
+
+     [*] release: v3.0.0 [skip ci]
+         
+         Signed-off-by: Conventional Release Action <rakinar2@onesoftnet.eu.org>
+         
+
 10-02-2026  Ar Rakin <rakinar2@osndevs.org>
 
      [*] ci: fix release workflow job
