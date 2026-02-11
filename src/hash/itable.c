@@ -24,13 +24,13 @@
 #include <string.h>
 
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#	include "config.h"
 #endif
 
 #include "itable.h"
 
 #ifdef HAVE_RAPIDHASH_H
-#include "rapidhash.h"
+#	include "rapidhash.h"
 #endif
 
 struct itable *
@@ -93,9 +93,9 @@ itable_hash_rapid (uint64_t key, uint64_t capacity)
 	return rapidhashMicro (&key, sizeof key) % capacity;
 }
 
-#define itable_hash itable_hash_rapid
+#	define itable_hash itable_hash_rapid
 #else
-#define itable_hash itable_hash_fnv1a
+#	define itable_hash itable_hash_fnv1a
 #endif
 
 void *
@@ -131,13 +131,21 @@ bool
 itable_set (struct itable *table, uint64_t key, void *data)
 {
 	if (table->count >= ((table->capacity * 75) / 100)
-		&& !itable_resize (table, table->capacity >= 1024 * 1024 ? table->capacity + 1024 * 1024 : table->capacity * 2))
+		&& !itable_resize (table, table->capacity >= 1024 * 1024
+									  ? table->capacity + 1024 * 1024
+									  : table->capacity * 2))
 	{
 #ifndef NDEBUG
-		uint64_t newcap = table->capacity >= 1024 * 1024 ? table->capacity + 1024 * 1024 : table->capacity * 2;
-		fprintf (stderr, "%s: Failed to resize hash table for key %" PRIu64 "\n", __func__, key);
-		fprintf (stderr, "Current capacity: %zu, count: %zu, new capacity: %zu\n", table->capacity, table->count,
-				 newcap);
+		uint64_t newcap = table->capacity >= 1024 * 1024
+							  ? table->capacity + 1024 * 1024
+							  : table->capacity * 2;
+		fprintf (stderr,
+				 "%s: Failed to resize hash table for key %" PRIu64 "\n",
+				 __func__, key);
+		fprintf (stderr,
+				 "Current capacity: %" PRIu64 ", count: %" PRIu64
+				 ", new capacity: %" PRIu64 "\n",
+				 table->capacity, table->count, newcap);
 #endif
 
 		return false;
@@ -149,7 +157,7 @@ itable_set (struct itable *table, uint64_t key, void *data)
 	uint64_t init_hash = hash;
 	bool start = false;
 
-	for (; hash < table->capacity; )
+	for (; hash < table->capacity;)
 	{
 		struct itable_entry *entry = &table->buckets[hash];
 
@@ -191,8 +199,10 @@ itable_set (struct itable *table, uint64_t key, void *data)
 	}
 
 #ifndef NDEBUG
-	fprintf (stderr, "%s: Hash table is full, cannot insert key %lu [hash %lu] [cap %lu]\n", __func__, key, init_hash,
-			 table->capacity);
+	fprintf (stderr,
+			 "%s: Hash table is full, cannot insert key %" PRIu64
+			 " [hash %" PRIu64 "] [cap %" PRIu64 "]\n",
+			 __func__, key, init_hash, table->capacity);
 #endif
 
 	return false;
@@ -259,7 +269,8 @@ itable_resize (struct itable *table, uint64_t new_capacity)
 		return false;
 	}
 
-	struct itable_entry *new_buckets = calloc (new_capacity, sizeof (struct itable_entry));
+	struct itable_entry *new_buckets
+		= calloc (new_capacity, sizeof (struct itable_entry));
 
 	if (!new_buckets)
 	{
@@ -295,7 +306,8 @@ itable_resize (struct itable *table, uint64_t new_capacity)
 				new_tail = entry;
 
 #ifndef NDEBUG
-				printf ("Moved key %" PRIu64 " to new bucket %zu\n", head->key, new_hash);
+				printf ("Moved key %" PRIu64 " to new bucket %" PRIu64 "\n",
+						head->key, new_hash);
 #endif
 				break;
 			}
@@ -305,7 +317,10 @@ itable_resize (struct itable *table, uint64_t new_capacity)
 			if (start && new_hash == init_hash)
 			{
 #ifndef NDEBUG
-				fprintf (stderr, "itable_resize: No empty slot found for key %" PRIu64 "\n", head->key);
+				fprintf (stderr,
+						 "itable_resize: No empty slot found for key %" PRIu64
+						 "\n",
+						 head->key);
 #endif
 				break;
 			}

@@ -44,7 +44,7 @@ main (void)
 	struct fh_config *config = calloc (1, sizeof (*config));
 
 	config->host_count = 1;
-	config->worker_count = 8;
+	config->worker_count = 4;
 	config->hosts = calloc (1, sizeof (struct fh_config_host));
 	config->hosts->docroot = strdup (cwd);
 	config->hosts->hostnames = calloc (1, sizeof (char *));

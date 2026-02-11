@@ -21,7 +21,9 @@
 #define FH_UTILS_H
 
 #include "compat.h"
+#include "types.h"
 
 _noreturn void freeze (void);
+bool fd_set_nonblocking (fd_t fd);
 
 #endif /* FH_UTILS_H */

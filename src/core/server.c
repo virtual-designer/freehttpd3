@@ -21,16 +21,22 @@
 
 #include "platform.h"
 
-#ifdef PLATFORM_LINUX
+#if PLATFORM_LINUX
 #	define _GNU_SOURCE
+#elif PLATFORM_BSD
+#	define _DARWIN_C_SOURCE
+#	define _BSD_SOURCE
 #endif /* PLATFORM_LINUX */
 
 #include <arpa/inet.h>
 #include <errno.h>
+#include <inttypes.h>
 #include <netinet/in.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -42,6 +48,7 @@
 #include "hash/itable.h"
 #include "log/log.h"
 #include "server.h"
+#include "utils/utils.h"
 #include "worker.h"
 
 #define XPOLL_MAX_EVENTS 4096
@@ -56,14 +63,6 @@ fh_server_create (struct fh_config *config)
 	if (!server)
 		return server;
 
-	server->xp = xpoll_create ();
-
-	if (!server->xp)
-	{
-		free (server);
-		return NULL;
-	}
-
 	server->config = config;
 	return server;
 }
@@ -71,12 +70,13 @@ fh_server_create (struct fh_config *config)
 void
 fh_server_destroy (struct fh_server *server)
 {
-	xpoll_destroy (server->xp);
+	if (server->xp)
+		xpoll_destroy (server->xp);
 
 	for_each_itable_entry (server->sockfd_table, sockfd)
 		close ((fd_t) sockfd->key);
 
-	fh_pr_info ("Closed %zu sockets", server->sockfd_table->count);
+	fh_pr_info ("Closed %" PRIu64 " sockets", server->sockfd_table->count);
 	itable_destroy (server->sockfd_table);
 
 	if (!server->is_worker)
@@ -97,10 +97,20 @@ fh_server_destroy (struct fh_server *server)
 static fd_t
 fh_server_create_socket (struct fh_server *server, int domain, uint16_t port)
 {
+#ifdef SOCK_NONBLOCK
+	fd_t sockfd = socket (domain, SOCK_STREAM | SOCK_NONBLOCK, 0);
+
+	if (sockfd < 0)
+		return -1;
+#else  /* not SOCK_NONBLOCK */
 	fd_t sockfd = socket (domain, SOCK_STREAM, 0);
 
 	if (sockfd < 0)
 		return -1;
+
+	if (!fd_set_nonblocking (sockfd))
+		return -1;
+#endif /* SOCK_NONBLOCK */
 
 	if (setsockopt (sockfd, SOL_SOCKET, SO_REUSEADDR, &(int) { 1 },
 					sizeof (int))
@@ -208,14 +218,6 @@ fh_server_create_sockets (struct fh_server *server)
 			}
 
 			itable_set (server->sockfd_table, (uint64_t) sockfd, (void *) 0x1);
-
-			if (xpoll_register_fd (server->xp, sockfd, XPOLL_IN, 0) < 0)
-			{
-				int err = errno;
-				itable_destroy (table);
-				errno = err;
-				return false;
-			}
 		}
 	}
 
@@ -249,10 +251,24 @@ fh_server_fork_workers (struct fh_server *server)
 		{
 			server->is_worker = true;
 			server->current_worker_index = i;
+
+			if (!server->xp)
+				server->xp = xpoll_create ();
+
+			if (!server->xp)
+				_exit (EXIT_FAILURE);
+
+			for_each_itable_entry (server->sockfd_table, sockfd)
+			{
+				if (xpoll_register_fd (server->xp, (fd_t) sockfd->key, XPOLL_IN,
+									   0)
+					< 0)
+					_exit (EXIT_FAILURE);
+			}
+
 			fh_log_set_worker_pid (getpid ());
 			fh_worker_start (server);
 			_exit (EXIT_FAILURE);
-			return false;
 		}
 
 		server->workers[server->worker_count++] = pid;
