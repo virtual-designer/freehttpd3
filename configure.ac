@@ -44,6 +44,7 @@ AC_SUBST([VERSION], FHTTPD_VERSION)
 
 top_builddir=`pwd`
 abs_srcdir="$(dirname "$0")/src"
+abs_srcdir="$(readlink -f "$abs_srcdir")"
 
 CPPFLAGS="-I$abs_srcdir/include -I$abs_srcdir -I$top_builddir/res -DHAVE_RESOURCES -DHAVE_CONFPATHS_H $CPPFLAGS"
 
