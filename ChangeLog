@@ -1,3 +1,57 @@
+13-02-2026  Ar Rakin <rakinar2@osndevs.org>
+
+     [*] fix: compiler warnings
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+     [*] fix(xpoll): incorrect macro-based member access
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+     [*] build: fix abs_srcdir calculation
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+     [*] test: add tests
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+     [*] feat(server): handle read/write events
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+11-02-2026  Conventional Release Action <rakinar2@onesoftnet.eu.org>
+
+     [*] release: v3.4.0 [skip ci]
+         
+         Signed-off-by: Conventional Release Action <rakinar2@onesoftnet.eu.org>
+         
+
+     [*] release: v3.3.0 [skip ci]
+         
+         Signed-off-by: Conventional Release Action <rakinar2@onesoftnet.eu.org>
+         
+
+     [*] release: v3.2.1 [skip ci]
+         
+         Signed-off-by: Conventional Release Action <rakinar2@onesoftnet.eu.org>
+         
+
+     [*] release: v3.2.0 [skip ci]
+         
+         Signed-off-by: Conventional Release Action <rakinar2@onesoftnet.eu.org>
+         
+
+     [*] release: v3.1.0 [skip ci]
+         
+         Signed-off-by: Conventional Release Action <rakinar2@onesoftnet.eu.org>
+         
+
 11-02-2026  Ar Rakin <rakinar2@onesoftnet.eu.org>
 
      [*] feat: test release
@@ -42,28 +96,6 @@
      [*] fix: darwin bugs
          
          Signed-off-by: Ar Rakin <rakinar2@onesoftnet.eu.org>
-         
-
-11-02-2026  Conventional Release Action <rakinar2@onesoftnet.eu.org>
-
-     [*] release: v3.3.0 [skip ci]
-         
-         Signed-off-by: Conventional Release Action <rakinar2@onesoftnet.eu.org>
-         
-
-     [*] release: v3.2.1 [skip ci]
-         
-         Signed-off-by: Conventional Release Action <rakinar2@onesoftnet.eu.org>
-         
-
-     [*] release: v3.2.0 [skip ci]
-         
-         Signed-off-by: Conventional Release Action <rakinar2@onesoftnet.eu.org>
-         
-
-     [*] release: v3.1.0 [skip ci]
-         
-         Signed-off-by: Conventional Release Action <rakinar2@onesoftnet.eu.org>
          
 
 11-02-2026  Ar Rakin <rakinar2@osndevs.org>
