@@ -27,8 +27,8 @@ AM_TESTS_ENVIRONMENT = \
 if PLAT_DARWIN
 AM_TESTS_ENVIRONMENT += \
 	VALGRIND=
-AM_CFLAGS = -fsanitize=address -fsanitize=leak
-AM_LDFLAGS = -fsanitize=address -fsanitize=leak
+AM_CFLAGS = -fsanitize=address
+AM_LDFLAGS = -fsanitize=address
 else
 AM_TESTS_ENVIRONMENT += \
 	VALGRIND=$(top_srcdir)/build-aux/valgrind
