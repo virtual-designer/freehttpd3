@@ -91,8 +91,7 @@ struct xpoll *xpoll_create (void);
 void xpoll_destroy (struct xpoll *xp);
 int xpoll_register_fd (struct xpoll *xp, int fd, xevent_type_t events,
 					   xevent_opt_t opts);
-int xpoll_unregister_fd (struct xpoll *xp, int fd, xevent_type_t events,
-						 xevent_opt_t opts);
+int xpoll_unregister_fd (struct xpoll *xp, int fd, xevent_type_t events);
 int xpoll_modify_registered_fd (struct xpoll *xp, int fd, xevent_type_t events,
 								xevent_opt_t opts);
 int xpoll_wait (struct xpoll *xp, xevent_t *events, int max_events,

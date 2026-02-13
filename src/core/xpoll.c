@@ -151,8 +151,7 @@ xpoll_modify_registered_fd (struct xpoll *xp, int fd, xevent_type_t events,
 }
 
 int
-xpoll_unregister_fd (struct xpoll *xp, int fd, xevent_type_t events,
-					 xevent_opt_t opts)
+xpoll_unregister_fd (struct xpoll *xp, int fd, xevent_type_t events)
 {
 #if PLATFORM_LINUX
 	return epoll_ctl (xp->fd, EPOLL_CTL_DEL, fd, NULL);
@@ -162,18 +161,12 @@ xpoll_unregister_fd (struct xpoll *xp, int fd, xevent_type_t events,
 
 	if (events & XPOLL_IN)
 	{
-		EV_SET (&ev[count++], fd, EVFILT_READ,
-				EV_DELETE | (opts & XPOLL_ET ? EV_CLEAR : 0)
-					| (opts & XPOLL_ONESHOT ? EV_ONESHOT : 0),
-				0, 0, NULL);
+		EV_SET (&ev[count++], fd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
 	}
 
 	if (events & XPOLL_OUT)
 	{
-		EV_SET (&ev[count++], fd, EVFILT_WRITE,
-				EV_DELETE | (opts & XPOLL_ET ? EV_CLEAR : 0)
-					| (opts & XPOLL_ONESHOT ? EV_ONESHOT : 0),
-				0, 0, NULL);
+		EV_SET (&ev[count++], fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
 	}
 
 	return kevent (xp->fd, ev, count, NULL, 0, NULL);
@@ -186,8 +179,7 @@ int
 xpoll_wait (struct xpoll *xp, xevent_t *events, int max_events, int timeout)
 {
 #if PLATFORM_LINUX
-	return epoll_wait (xp->fd, &events->linux_ev, max_events,
-					   timeout);
+	return epoll_wait (xp->fd, &events->linux_ev, max_events, timeout);
 #elif PLATFORM_BSD
 	struct timespec tspec = { 0 };
 

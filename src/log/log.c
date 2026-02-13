@@ -1,18 +1,18 @@
 /*
  * This file is part of OSN freehttpd.
- * 
+ *
  * Copyright (C) 2025  OSN Developers.
  *
  * OSN freehttpd is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * OSN freehttpd is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with OSN freehttpd.  If not, see <https://www.gnu.org/licenses/>.
  */
@@ -26,9 +26,9 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "compat.h"
 #include "log.h"
 #include "platform.h"
-#include "compat.h"
 #include "utils/datetime.h"
 
 #ifdef NDEBUG
@@ -78,12 +78,18 @@ fh_printl (const char *format, ...)
 
 	if (likely (is_tty))
 	{
-		const int color = level == LOG_DEBUG ? 2 : level == LOG_INFO ? 0 : level == LOG_WARN ? 33 : 31;
+		const int color = level == LOG_DEBUG  ? 2
+						  : level == LOG_INFO ? 36
+						  : level == LOG_WARN ? 33
+											  : 31;
 		const int ts_color = level >= LOG_WARN ? 31 : 32;
 
-		fprintf (stream, "\033[%dm[%12.7lf]\033[0m \033[2;37m[%s %d]\033[0m \033[%dm%-6s\033[0m ", ts_color,
-				 ((double) (now () - startup_time)) / (double) 1000000, is_master ? "Master" : "Worker", main_pid,
-				 color,
+		fprintf (stream,
+				 "\033[%dm[%12.7lf]\033[0m \033[2;37m[%s %d]\033[0m "
+				 "\033[%dm%-6s\033[0m ",
+				 ts_color,
+				 ((double) (now () - startup_time)) / (double) 1000000,
+				 is_master ? "Master" : "Worker", main_pid, color,
 				 level == LOG_DEBUG	 ? "debug:"
 				 : level == LOG_INFO ? "info:"
 				 : level == LOG_WARN ? "warn:"
@@ -92,7 +98,8 @@ fh_printl (const char *format, ...)
 	}
 	else
 	{
-		fprintf (stream, "[%12.7lf] [%s %d] %-6s ", ((double) (now () - startup_time)) / (double) 1000000,
+		fprintf (stream, "[%12.7lf] [%s %d] %-6s ",
+				 ((double) (now () - startup_time)) / (double) 1000000,
 				 is_master ? "Master" : "Worker", main_pid,
 				 level == LOG_DEBUG	 ? "debug:"
 				 : level == LOG_INFO ? "info:"

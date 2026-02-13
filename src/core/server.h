@@ -40,6 +40,8 @@ struct fh_server
 	struct fh_config *config;
 	/* (fd_t) => (struct sockfd_info *) */
 	struct itable *sockfd_table;
+	/* (fd_t) => (struct fh_conn *) */
+	struct itable *conn_table;
 	pid_t *workers;
 	size_t worker_count;
 	size_t current_worker_index;

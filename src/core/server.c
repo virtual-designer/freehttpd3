@@ -45,6 +45,7 @@
 #include <unistd.h>
 
 #include "compat.h"
+#include "connection.h"
 #include "core/config.h"
 #include "hash/itable.h"
 #include "log/log.h"
@@ -65,6 +66,7 @@ fh_server_create (struct fh_config *config)
 		return server;
 
 	server->config = config;
+	server->conn_table = itable_create (4096);
 	return server;
 }
 
@@ -80,7 +82,14 @@ fh_server_destroy (struct fh_server *server)
 		free (sockfd->data);
 	}
 
-	fh_pr_info ("Closed %" PRIu64 " sockets", server->sockfd_table->count);
+	for_each_itable_entry (server->conn_table, conn)
+	{
+		fh_conn_destroy (conn->data);
+	}
+
+	fh_pr_info ("Closed %" PRIu64 " sockets and %" PRIu64 " connections",
+				server->sockfd_table->count, server->conn_table->count);
+	itable_destroy (server->conn_table);
 	itable_destroy (server->sockfd_table);
 
 	if (!server->is_worker)
@@ -332,6 +341,49 @@ fh_server_start (struct fh_server *server)
 }
 
 static bool
+fh_server_add_conn (struct fh_server *server, fd_t client_fd,
+					const struct sockaddr_storage *client_addr)
+{
+	struct fh_conn *conn = fh_conn_create (client_fd, client_addr);
+
+	if (!conn)
+		return false;
+
+	if (xpoll_register_fd (server->xp, client_fd, XPOLL_IN, XPOLL_ET) != 0)
+	{
+		fh_conn_destroy (conn);
+		return false;
+	}
+
+	if (!itable_set (server->conn_table, (uint64_t) client_fd, conn))
+	{
+		xpoll_unregister_fd (server->xp, client_fd, XPOLL_IN);
+		fh_conn_destroy (conn);
+		return false;
+	}
+
+	return true;
+}
+
+static bool
+fh_server_close_conn (struct fh_server *server, struct fh_conn *conn)
+{
+	xpoll_unregister_fd (server->xp, conn->sockfd, XPOLL_IN | XPOLL_OUT);
+	itable_remove (server->conn_table, (uint64_t) conn->sockfd);
+	fh_conn_destroy (conn);
+	return true;
+}
+
+static bool
+fh_server_close_fd (struct fh_server *server, fd_t fd)
+{
+	xpoll_unregister_fd (server->xp, fd, XPOLL_IN | XPOLL_OUT);
+	itable_remove (server->conn_table, (uint64_t) fd);
+	close (fd);
+	return true;
+}
+
+static bool
 fh_server_accept (struct fh_server *server, fd_t server_fd,
 				  const struct sockfd_info *info)
 {
@@ -339,14 +391,9 @@ fh_server_accept (struct fh_server *server, fd_t server_fd,
 
 	while (true)
 	{
-		union
-		{
-			struct sockaddr_in in4;
-			struct sockaddr_in6 in6;
-		} client_addr;
+		struct sockaddr_storage client_addr;
+		socklen_t client_addr_len = sizeof (client_addr);
 		bool is_ip6 = info->family == AF_INET6;
-		socklen_t client_addr_len = is_ip6 ? sizeof (struct sockaddr_in6)
-										   : sizeof (struct sockaddr_in);
 		fd_t client_fd;
 
 #ifdef HAVE_ACCEPT4
@@ -378,6 +425,12 @@ fh_server_accept (struct fh_server *server, fd_t server_fd,
 
 		err_count = 0;
 
+		if (info->family != client_addr.ss_family)
+		{
+			close (client_fd);
+			continue;
+		}
+
 #ifndef HAVE_ACCEPT4
 		if (!fd_set_nonblocking (client_fd))
 		{
@@ -386,31 +439,42 @@ fh_server_accept (struct fh_server *server, fd_t server_fd,
 		}
 #endif /* HAVE_ACCEPT4 */
 
-		char ip[(is_ip6 ? INET6_ADDRSTRLEN : INET_ADDRSTRLEN) + 1];
-		inet_ntop (info->family,
-				   is_ip6 ? (void *) &client_addr.in6.sin6_addr
-						  : (void *) &client_addr.in4.sin_addr,
-				   ip, is_ip6 ? INET6_ADDRSTRLEN : INET_ADDRSTRLEN);
-		uint16_t port = ntohs (is_ip6 ? client_addr.in6.sin6_port
-									  : client_addr.in4.sin_port);
+		char ip[INET6_ADDRSTRLEN] = { 0 };
+		inet_ntop (
+			info->family,
+			is_ip6 ? (void *) &((struct sockaddr_in6 *) &client_addr)->sin6_addr
+				   : (void *) &((struct sockaddr_in *) &client_addr)->sin_addr,
+			ip, is_ip6 ? INET6_ADDRSTRLEN : INET_ADDRSTRLEN);
+		uint16_t port
+			= ntohs (is_ip6 ? ((struct sockaddr_in6 *) &client_addr)->sin6_port
+							: ((struct sockaddr_in *) &client_addr)->sin_port);
 
 		fh_pr_info ("Accepted connection: server_fd=%d, client_fd=%d, "
 					"client_addr=%s:%d",
 					server_fd, client_fd, ip, port);
 
-		errno = 0;
-		ssize_t written_size = write (
-			client_fd,
-			"HTTP/1.1 200 OK\r\nServer: freehttpd\r\nContent-Type: "
-			"text/html; charset=\"UTF-8\"\r\nConnection: "
-			"close\r\nContent-Length: 75\r\n\r\n<h1>Hello world from <span "
-			"style=\"color: #007bff;\">freehttpd</span>!</h1>\n\n",
-			194);
-
-		fh_pr_debug ("sz=%li, errmsg=\"%s\"", written_size, strerror (errno));
-		close (client_fd);
+		if (!fh_server_add_conn (server, client_fd, &client_addr))
+		{
+			fh_pr_err ("Failed to add connection: %s", strerror (errno));
+			close (client_fd);
+			continue;
+		}
 	}
 
+	return true;
+}
+
+static bool
+fh_server_on_read (struct fh_server *server, struct fh_conn *conn)
+{
+	fh_server_close_conn (server, conn);
+	return true;
+}
+
+static bool
+fh_server_on_write (struct fh_server *server, struct fh_conn *conn)
+{
+	fh_server_close_conn (server, conn);
 	return true;
 }
 
@@ -448,6 +512,46 @@ fh_server_wait (struct fh_server *server, bool *should_terminate)
 					fh_pr_err ("accept failed: %s", strerror (errno));
 
 				continue;
+			}
+
+			struct fh_conn *conn
+				= itable_get (server->conn_table, (uint64_t) fd);
+
+			if (!conn)
+			{
+				fh_server_close_fd (server, fd);
+				continue;
+			}
+
+			if (XPOLL_EVENT_IS_ERR (&events[i]))
+			{
+				fh_pr_err ("xpoll error: client_fd=%d, errno=%d, msg=\"\"", fd,
+						   errno, strerror (errno));
+				fh_server_close_conn (server, conn);
+				continue;
+			}
+
+			if (kind & XPOLL_IN)
+			{
+				fh_pr_info ("xpoll read notification: client_fd=%d", fd);
+
+				if (!fh_server_on_read (server, conn))
+				{
+					fh_pr_err ("read event handler failed: %s",
+							   strerror (errno));
+					fh_server_close_conn (server, conn);
+				}
+			}
+			else if (kind & XPOLL_OUT)
+			{
+				fh_pr_info ("xpoll write notification: client_fd=%d", fd);
+
+				if (!fh_server_on_write (server, conn))
+				{
+					fh_pr_err ("write event handler failed: %s",
+							   strerror (errno));
+					fh_server_close_conn (server, conn);
+				}
 			}
 		}
 	}
