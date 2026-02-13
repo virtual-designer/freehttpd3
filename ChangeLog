@@ -1,5 +1,18 @@
 13-02-2026  Ar Rakin <rakinar2@osndevs.org>
 
+     [*] fix: build errors
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+     [*] merge: branch 'main' of github.com:virtual-designer/freehttpd3
+         
+
+     [*] fix: build errors
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
      [*] fix: compiler warnings
          
          Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
@@ -23,6 +36,13 @@
      [*] feat(server): handle read/write events
          
          Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+13-02-2026  Conventional Release Action <rakinar2@onesoftnet.eu.org>
+
+     [*] release: v3.5.0 [skip ci]
+         
+         Signed-off-by: Conventional Release Action <rakinar2@onesoftnet.eu.org>
          
 
 11-02-2026  Conventional Release Action <rakinar2@onesoftnet.eu.org>
