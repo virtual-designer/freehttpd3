@@ -440,11 +440,13 @@ fh_server_accept (struct fh_server *server, fd_t server_fd,
 #endif /* HAVE_ACCEPT4 */
 
 		char ip[INET6_ADDRSTRLEN] = { 0 };
+
 		inet_ntop (
 			info->family,
 			is_ip6 ? (void *) &((struct sockaddr_in6 *) &client_addr)->sin6_addr
 				   : (void *) &((struct sockaddr_in *) &client_addr)->sin_addr,
 			ip, is_ip6 ? INET6_ADDRSTRLEN : INET_ADDRSTRLEN);
+
 		uint16_t port
 			= ntohs (is_ip6 ? ((struct sockaddr_in6 *) &client_addr)->sin6_port
 							: ((struct sockaddr_in *) &client_addr)->sin_port);
