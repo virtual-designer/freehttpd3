@@ -1,4 +1,4 @@
-SUBDIRS = res src
+SUBDIRS = res src tests
 
 EXTRA_DIST = \
 	README \

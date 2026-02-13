@@ -42,6 +42,23 @@ AM_SILENT_RULES([yes])
 
 AC_SUBST([VERSION], FHTTPD_VERSION)
 
+top_builddir=`pwd`
+abs_srcdir="$(dirname "$0")/src"
+
+CPPFLAGS="-I$abs_srcdir/include -I$abs_srcdir -I$top_builddir/res -DHAVE_RESOURCES -DHAVE_CONFPATHS_H $CPPFLAGS"
+
+case "$target" in
+    *"darwin"*)
+		darwin=1
+		;;
+
+	*)
+		darwin=0
+		;;
+esac
+
+AM_CONDITIONAL([PLAT_DARWIN], [test "$darwin" = "1"])
+
 # Checks for programs.
 AC_PROG_CC
 AM_PROG_AR
@@ -64,6 +81,7 @@ AC_CONFIG_FILES([Makefile
                  src/core/Makefile
                  src/hash/Makefile
                  src/log/Makefile
-                 src/utils/Makefile])
+                 src/utils/Makefile
+                 tests/Makefile])
 AC_OUTPUT
 PRINT_SUMMARY
