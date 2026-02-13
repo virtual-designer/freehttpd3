@@ -40,7 +40,7 @@ fh_conn_create (fd_t client_fd, const struct sockaddr_storage *client_addr)
 	{
 		conn->client_addr = (struct sockaddr_storage *) (conn + 1);
 		memcpy (conn->client_addr, client_addr,
-				sizeof (struct sockaddr_storage *));
+				sizeof (struct sockaddr_storage));
 
 		if (conn->client_addr->ss_family == AF_INET6)
 			conn->port = ntohs (

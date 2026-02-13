@@ -108,7 +108,7 @@ fh_server_destroy (struct fh_server *server)
 }
 
 static fd_t
-fh_server_create_socket (struct fh_server *server, int domain, uint16_t port)
+fh_server_create_socket (struct fh_server *server __attribute__((unused)), int domain, uint16_t port)
 {
 #ifdef SOCK_NONBLOCK
 	fd_t sockfd = socket (domain, SOCK_STREAM | SOCK_NONBLOCK, 0);

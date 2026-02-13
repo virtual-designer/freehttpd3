@@ -150,8 +150,14 @@ xpoll_modify_registered_fd (struct xpoll *xp, int fd, xevent_type_t events,
 #endif /* PLATFORM_LINUX */
 }
 
+#if PLATFORM_LINUX
+#define __linux_unused __attribute__((unused))
+#else /* not PLATFORM_LINUX */
+#define __linux_unused
+#endif /* PLATFORM_LINUX */
+
 int
-xpoll_unregister_fd (struct xpoll *xp, int fd, xevent_type_t events)
+xpoll_unregister_fd (struct xpoll *xp, int fd, xevent_type_t events __linux_unused)
 {
 #if PLATFORM_LINUX
 	return epoll_ctl (xp->fd, EPOLL_CTL_DEL, fd, NULL);

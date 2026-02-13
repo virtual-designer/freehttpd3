@@ -48,6 +48,15 @@ abs_srcdir="$(readlink -f "$abs_srcdir")"
 
 CPPFLAGS="-I$abs_srcdir/include -I$abs_srcdir -I$top_builddir/res -DHAVE_RESOURCES -DHAVE_CONFPATHS_H $CPPFLAGS"
 
+AC_ARG_ENABLE([maintainer-mode],
+            [AS_HELP_STRING([--enable-maintainer-mode], [Enable default flags and settings used by maintainers (default: no).])],
+            [enable_maintainer_mode=yes],
+            [enable_maintainer_mode=no])
+  
+if test "$enable_maintainer_mode" = "yes"; then
+    CFLAGS="-Wall -Wextra -Wpedantic -std=gnu99 $CFLAGS"
+fi
+
 case "$target" in
     *"darwin"*)
 		darwin=1
