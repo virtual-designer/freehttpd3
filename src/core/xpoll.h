@@ -75,7 +75,7 @@ union xpoll_event
 #elif PLATFORM_BSD
 #	define XPOLL_EVENT_RAW(ev) ((ev)->bsd_ev)
 #	define XPOLL_EVENT_FD(ev) ((int) (XPOLL_EVENT_RAW (ev)).ident)
-#	define XPOLL_EVENT_IS_ERR(ev) ((XPOLL_EVENT_KINDS(ev)).flags & EV_ERROR)
+#	define XPOLL_EVENT_IS_ERR(ev) ((XPOLL_EVENT_RAW(ev)).flags & EV_ERROR)
 #	if EVFILT_READ < 0
 #		define XPOLL_EVENT_KINDS(ev) (-(XPOLL_EVENT_RAW (ev)).filter)
 #	else /* not EVFILT_READ < 0 */

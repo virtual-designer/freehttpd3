@@ -525,7 +525,7 @@ fh_server_wait (struct fh_server *server, bool *should_terminate)
 
 			if (XPOLL_EVENT_IS_ERR (&events[i]))
 			{
-				fh_pr_err ("xpoll error: client_fd=%d, errno=%d, msg=\"\"", fd,
+				fh_pr_err ("xpoll error: client_fd=%d, errno=%d, msg=\"%s\"", fd,
 						   errno, strerror (errno));
 				fh_server_close_conn (server, conn);
 				continue;
