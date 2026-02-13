@@ -1,5 +1,13 @@
 13-02-2026  Ar Rakin <rakinar2@osndevs.org>
 
+     [*] fix: fd flag setting issues
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+     [*] chore(readme): remove origin repository information
+         
+
      [*] fix: build errors
          
          Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
@@ -39,6 +47,11 @@
          
 
 13-02-2026  Conventional Release Action <rakinar2@onesoftnet.eu.org>
+
+     [*] release: v3.5.2 [skip ci]
+         
+         Signed-off-by: Conventional Release Action <rakinar2@onesoftnet.eu.org>
+         
 
      [*] release: v3.5.0 [skip ci]
          
