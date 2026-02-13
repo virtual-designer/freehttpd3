@@ -52,5 +52,3 @@ check-benchmark:
 
 clean-local:
 	rm -f vgcore.* *.log
-	rm -rf .deps
-
