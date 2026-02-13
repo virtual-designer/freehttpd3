@@ -28,7 +28,7 @@ Then run the build:
     make install
 
 This should install all programs necessary to operate freehttpd, in
-/usr/local. You can change the destination by using the --prefix option
+/usr/local. You can change the destination by using the `--prefix` option
 with ./configure.
 
 Documentation

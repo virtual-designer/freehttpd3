@@ -111,7 +111,7 @@ static fd_t
 fh_server_create_socket (struct fh_server *server __attribute__((unused)), int domain, uint16_t port)
 {
 #ifdef SOCK_NONBLOCK
-	fd_t sockfd = socket (domain, SOCK_STREAM | SOCK_NONBLOCK, 0);
+	fd_t sockfd = socket (domain, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
 
 	if (sockfd < 0)
 		return -1;
@@ -121,7 +121,7 @@ fh_server_create_socket (struct fh_server *server __attribute__((unused)), int d
 	if (sockfd < 0)
 		return -1;
 
-	if (!fd_set_nonblocking (sockfd))
+	if (!fd_add_flags (sockfd, O_NONBLOCK | FD_CLOEXEC))
 		return -1;
 #endif /* SOCK_NONBLOCK */
 
@@ -398,7 +398,7 @@ fh_server_accept (struct fh_server *server, fd_t server_fd,
 
 #ifdef HAVE_ACCEPT4
 		client_fd = accept4 (server_fd, (struct sockaddr *) &client_addr,
-							 &client_addr_len, O_NONBLOCK);
+							 &client_addr_len, SOCK_NONBLOCK | SOCK_CLOEXEC);
 #else  /* not HAVE_ACCEPT4 */
 		client_fd = accept (server_fd, (struct sockaddr *) &client_addr,
 							&client_addr_len);
@@ -432,7 +432,7 @@ fh_server_accept (struct fh_server *server, fd_t server_fd,
 		}
 
 #ifndef HAVE_ACCEPT4
-		if (!fd_set_nonblocking (client_fd))
+		if (!fd_add_flags (client_fd, O_NONBLOCK | FD_CLOEXEC))
 		{
 			close (client_fd);
 			continue;
