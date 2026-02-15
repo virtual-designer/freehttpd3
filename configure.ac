@@ -52,7 +52,7 @@ AC_ARG_ENABLE([maintainer-mode],
             [AS_HELP_STRING([--enable-maintainer-mode], [Enable default flags and settings used by maintainers (default: no).])],
             [enable_maintainer_mode=yes],
             [enable_maintainer_mode=no])
-  
+
 if test "$enable_maintainer_mode" = "yes"; then
     CFLAGS="-Wall -Wextra -Wpedantic -std=gnu99 $CFLAGS"
 fi
@@ -85,11 +85,13 @@ AC_CHECK_FUNCS([accept4])
 # Checks for library functions.
 
 AC_CONFIG_FILES([Makefile
-                 res/Makefile 
+                 res/Makefile
                  src/Makefile
                  src/include/Makefile
                  src/core/Makefile
                  src/hash/Makefile
+                 src/http/Makefile
+                 src/mm/Makefile
                  src/log/Makefile
                  src/utils/Makefile
                  tests/Makefile])

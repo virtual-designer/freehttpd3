@@ -1,10 +1,11 @@
-SUBDIRS = include core hash log utils
+SUBDIRS = include core hash http mm log utils
 
 bin_PROGRAMS = freehttpd
 freehttpd_SOURCES = fhttpd.c
 freehttpd_LDADD = \
 	core/libcore.a \
 	hash/libhash.a \
+	http/libhttp.a \
 	log/liblog.a \
 	utils/libutils.a
 
