@@ -1,4 +1,31 @@
+15-02-2026  Ar Rakin <rakinar2@osndevs.org>
+
+     [*] build(tests): darwin test failure
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+     [*] feat(mm): add dynamic memory pool implementation
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+     [*] feat: add http1x files
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
 13-02-2026  Ar Rakin <rakinar2@osndevs.org>
+
+     [*] style: add spacing
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+     [*] build: bmake support
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
 
      [*] fix: fd flag setting issues
          
@@ -47,6 +74,11 @@
          
 
 13-02-2026  Conventional Release Action <rakinar2@onesoftnet.eu.org>
+
+     [*] release: v3.5.3 [skip ci]
+         
+         Signed-off-by: Conventional Release Action <rakinar2@onesoftnet.eu.org>
+         
 
      [*] release: v3.5.2 [skip ci]
          
