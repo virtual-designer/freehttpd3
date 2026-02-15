@@ -29,6 +29,7 @@ AM_TESTS_ENVIRONMENT += \
 	VALGRIND=
 AM_CFLAGS = -fsanitize=address
 AM_LDFLAGS = -fsanitize=address
+PLAT_DARWIN = 1
 else
 AM_TESTS_ENVIRONMENT += \
 	VALGRIND=$(top_srcdir)/build-aux/valgrind
@@ -41,6 +42,9 @@ itable_test_helper_SOURCES = itable.test.c $(top_srcdir)/src/hash/itable.c $(top
 strtable_test_helper_SOURCES = strtable.test.c $(top_srcdir)/src/hash/strtable.c $(top_srcdir)/src/hash/strtable.h
 
 EXTRA_DIST = $(TESTS)
+
+check-local:
+	@if test "$(PLAT_DARWIN)" = "1"; then $(MAKE) -C $(top_builddir)/src clean; fi
 
 check-valgrind-benchmark:
 	BINDIR=$(top_srcdir)/src $(SHELL) valgrind-benchmark.sh
