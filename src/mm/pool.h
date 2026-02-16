@@ -1,6 +1,8 @@
 #ifndef FHTTPD_POOL_H
 #define FHTTPD_POOL_H
 
+#include <stddef.h>
+
 struct fh_pool;
 typedef struct fh_pool pool_t;
 
