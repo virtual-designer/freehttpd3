@@ -1,3 +1,17 @@
+16-02-2026  Ar Rakin <rakinar2@onesoftnet.eu.org>
+
+     [*] feat(mm:pool): handle large allocations
+         
+         Signed-off-by: Ar Rakin <rakinar2@onesoftnet.eu.org>
+         
+
+15-02-2026  Conventional Release Action <rakinar2@onesoftnet.eu.org>
+
+     [*] release: v3.7.0 [skip ci]
+         
+         Signed-off-by: Conventional Release Action <rakinar2@onesoftnet.eu.org>
+         
+
 15-02-2026  Ar Rakin <rakinar2@osndevs.org>
 
      [*] build(tests): darwin test failure
