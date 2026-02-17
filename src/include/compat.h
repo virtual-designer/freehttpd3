@@ -53,12 +53,12 @@
 #endif
 
 #if EAGAIN == EWOULDBLOCK
-#define would_block() (errno == EAGAIN)
+#define ERR_WOULD_BLOCK (errno == EAGAIN)
 #else 
-#define would_block() (errno == EAGAIN || errno == EWOULDBLOCK)
+#define ERR_WOULD_BLOCK (errno == EAGAIN || errno == EWOULDBLOCK)
 #endif
 
-#define would_interrupt() (would_block() || errno == EINTR)
+#define ERR_WOULD_INTERRUPT (ERR_WOULD_BLOCK || errno == EINTR)
 
 #if defined(__linux__)
 #define FH_PLATFORM_LINUX

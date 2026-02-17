@@ -21,7 +21,9 @@
 noinst_LIBRARIES = libmm.a
 libmm_a_SOURCES = \
 	pool.c \
-	pool.h
+	pool.h \
+	chain.c \
+	chain.h
 
 AM_CFLAGS = $(EXPORTED_AM_CFLAGS)
 AM_CPPFLAGS = $(EXPORTED_AM_CPPFLAGS)

@@ -409,7 +409,7 @@ fh_server_accept (struct fh_server *server, fd_t server_fd,
 			if (errno == EINTR)
 				continue;
 
-			if (would_block ())
+			if (ERR_WOULD_BLOCK)
 				break;
 
 			fh_pr_err ("Unable to accept connection via socket %d [IPv%d]: %s",
@@ -494,7 +494,7 @@ fh_server_wait (struct fh_server *server, bool *should_terminate)
 
 		if (n_fds < 0)
 		{
-			if (would_interrupt ())
+			if (ERR_WOULD_INTERRUPT)
 				continue;
 
 			fh_pr_err ("xpoll_wait failed: %s", strerror (errno));

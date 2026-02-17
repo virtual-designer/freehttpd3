@@ -95,7 +95,7 @@ fh_pool_free (struct fh_pool *pool)
 void *
 fh_pool_alloc (struct fh_pool *pool, size_t size)
 {
-	if (size >= POOL_LARGE_THRESHOLD)
+	if (size > POOL_LARGE_THRESHOLD)
 	{
 		struct fh_pool_large_chunk *lg_chunk = malloc (sizeof (*lg_chunk) + size);
 

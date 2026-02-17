@@ -54,7 +54,7 @@ AC_ARG_ENABLE([maintainer-mode],
             [enable_maintainer_mode=no])
 
 if test "$enable_maintainer_mode" = "yes"; then
-    CFLAGS="-Wall -Wextra -Wpedantic -std=gnu99 $CFLAGS"
+    CFLAGS="-Wall -Wextra -Wpedantic -std=gnu11 $CFLAGS"
 fi
 
 case "$target" in
