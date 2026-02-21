@@ -42,8 +42,8 @@ itable_test_helper_SOURCES = itable.test.c $(top_srcdir)/src/hash/itable.c $(top
 strtable_test_helper_SOURCES = strtable.test.c $(top_srcdir)/src/hash/strtable.c $(top_srcdir)/src/hash/strtable.h
 chain_test_helper_SOURCES = chain.test.c
 chain_test_helper_LDADD = \
-	$(top_srcdir)/src/log/liblog.a \
-	$(top_srcdir)/src/mm/libmm.a
+	$(top_builddir)/src/log/liblog.a \
+	$(top_builddir)/src/mm/libmm.a
 
 EXTRA_DIST = $(TESTS)
 
