@@ -1,3 +1,22 @@
+21-02-2026  Ar Rakin <rakinar2@osndevs.org>
+
+     [*] build: fix library paths for tests
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+     [*] feat: chain operations
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+17-02-2026  Conventional Release Action <rakinar2@onesoftnet.eu.org>
+
+     [*] release: v3.9.0 [skip ci]
+         
+         Signed-off-by: Conventional Release Action <rakinar2@onesoftnet.eu.org>
+         
+
 17-02-2026  Ar Rakin <rakinar2@onesoftnet.eu.org>
 
      [*] merge: branch 'main' of github.com:virtual-designer/freehttpd3
