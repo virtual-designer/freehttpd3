@@ -85,7 +85,7 @@ fh_pool_free (struct fh_pool *pool)
 			lg_chunk->cleanup_cb (lg_chunk->start);
 		else
 			free (lg_chunk);
-		
+
 		lg_chunk = prev;
 	}
 
@@ -108,7 +108,7 @@ fh_pool_alloc (struct fh_pool *pool, size_t size)
 		lg_chunk->start = (void *) (lg_chunk + 1);
 
 		pool->last_lg = lg_chunk;
-		return lg_chunk;
+		return lg_chunk->start;
 	}
 
 	struct fh_pool_chunk *chunk = pool->last;

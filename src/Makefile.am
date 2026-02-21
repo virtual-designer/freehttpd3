@@ -7,7 +7,8 @@ freehttpd_LDADD = \
 	hash/libhash.a \
 	http/libhttp.a \
 	log/liblog.a \
-	utils/libutils.a
+	utils/libutils.a \
+	mm/libmm.a
 
 AM_CFLAGS = $(EXPORTED_AM_CFLAGS)
 AM_CPPFLAGS = $(EXPORTED_AM_CPPFLAGS)

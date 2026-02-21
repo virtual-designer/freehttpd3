@@ -17,6 +17,8 @@
  * along with OSN freehttpd.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include "core/xpoll.h"
+#include "types.h"
 #define FH_LOG_MODULE_NAME "server"
 
 #include "platform.h"
@@ -52,6 +54,9 @@
 #include "server.h"
 #include "utils/utils.h"
 #include "worker.h"
+#include "http/http1x.h"
+#include "mm/chain.h"
+#include "mm/pool.h"
 
 #define XPOLL_MAX_EVENTS 4096
 
