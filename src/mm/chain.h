@@ -1,11 +1,12 @@
 #ifndef FHTTPD_MM_CHAIN_H
 #define FHTTPD_MM_CHAIN_H
 
-#include "pool.h"
-#include "types.h"
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+
+#include "pool.h"
+#include "types.h"
 
 enum fh_buf_type
 {
@@ -50,6 +51,13 @@ struct fh_chain_cur
 	size_t off;
 };
 
+struct fh_chain_cpbuf
+{
+	uint8_t *raw_buf;
+	size_t len;
+	bool incomplete;
+};
+
 struct fh_chain *fh_chain_new (struct fh_pool *pool, struct fh_buf *buf);
 struct fh_buf *fh_buf_new_file (struct fh_pool *pool, fd_t fd);
 struct fh_buf *fh_buf_new_mem (struct fh_pool *pool, uint8_t *mem,
@@ -58,8 +66,11 @@ bool fh_chain_read (struct fh_pool *pool, fd_t fd, struct fh_chain **head,
 					struct fh_chain **tail);
 struct fh_chain *fh_chain_new_with_buf_mem (struct fh_pool *pool,
 											size_t capacity);
-bool fh_http1x_chain_memchr (struct fh_chain_cur *dest_cur,
-							 const struct fh_chain_cur *begin, int delim,
-							 size_t max_len);
+bool fh_chain_find_char (struct fh_chain_cur *dest_cur,
+						 const struct fh_chain_cur *begin, int delim,
+						 size_t max_len);
+bool fh_chain_copy_range (struct fh_pool *pool, struct fh_chain_cur *start_cur,
+						  struct fh_chain_cur *end_cur, size_t max_probable_len,
+						  struct fh_chain_cpbuf *cpbuf);
 
 #endif /* FHTTPD_MM_CHAIN_H */

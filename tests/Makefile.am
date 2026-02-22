@@ -24,11 +24,14 @@ AM_TESTS_ENVIRONMENT = \
 	top_builddir=$(top_builddir) \
 	testdir=$(top_builddir)/tests
 
+AM_CFLAGS = -g
+AM_LDFLAGS = -g
+
 if PLAT_DARWIN
 AM_TESTS_ENVIRONMENT += \
 	VALGRIND=
-AM_CFLAGS = -fsanitize=address
-AM_LDFLAGS = -fsanitize=address
+AM_CFLAGS += -fsanitize=address
+AM_LDFLAGS += -fsanitize=address
 PLAT_DARWIN = 1
 else
 AM_TESTS_ENVIRONMENT += \

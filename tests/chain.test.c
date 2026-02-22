@@ -1,15 +1,15 @@
-#include "mm/pool.h"
-#include <stdint.h>
 #undef NDEBUG
 
 #include <assert.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "http/http1x.h"
 #include "mm/chain.h"
+#include "mm/pool.h"
 
 static struct fh_chain *
 create_chain (char *raw_buf[static 1], size_t buf_count)
@@ -82,7 +82,7 @@ test_single_buffer (void)
 
 	print_chain (chain);
 
-	assert (fh_http1x_chain_memchr (&end_cur, &start_cur, ' ', 16));
+	assert (fh_chain_find_char (&end_cur, &start_cur, ' ', 16));
 
 	assert (end_cur.chain == chain);
 	assert (end_cur.off == 3);
@@ -101,11 +101,74 @@ test_split_buffers (void)
 
 	print_chain (chain);
 
-	assert (fh_http1x_chain_memchr (&end_cur, &start_cur, ' ', 16));
+	assert (fh_chain_find_char (&end_cur, &start_cur, ' ', 16));
 
 	assert (end_cur.chain == chain->next);
 	assert (end_cur.off == 1);
 
+	free_chain (chain);
+}
+
+static void
+test_chain_zero_copy (void)
+{
+	struct fh_chain *chain
+		= create_chain ((char *[]) { "GET /", " HTTP/1.1\r\n" }, 2);
+	struct fh_pool *pool = fh_pool_create (4096);
+
+	struct fh_chain_cur end_cur = { 0 };
+	struct fh_chain_cur start_cur = { .chain = chain, .off = 0 };
+
+	print_chain (chain);
+
+	assert (fh_chain_find_char (&end_cur, &start_cur, ' ', 16));
+
+	assert (end_cur.chain == chain);
+	assert (end_cur.off == 3);
+
+	struct fh_chain_cpbuf cpbuf = { 0 };
+
+	assert (fh_chain_copy_range (pool, &start_cur, &end_cur, 8, &cpbuf));
+
+	printf ("BUFFER: (%zu) |%.*s|\n", cpbuf.len, (int) cpbuf.len,
+			(char *) cpbuf.raw_buf);
+
+	assert (cpbuf.len == 3);
+	assert (memcmp (cpbuf.raw_buf, "GET", 3) == 0);
+	assert (cpbuf.raw_buf == chain->buf->mem_ptr);
+
+	fh_pool_free (pool);
+	free_chain (chain);
+}
+
+static void
+test_chain_copy (void)
+{
+	struct fh_chain *chain
+		= create_chain ((char *[]) { "PA", "T", "CH /", " HTTP/1.1\r\n" }, 4);
+	struct fh_pool *pool = fh_pool_create (4096);
+
+	struct fh_chain_cur end_cur = { 0 };
+	struct fh_chain_cur start_cur = { .chain = chain, .off = 0 };
+
+	print_chain (chain);
+
+	assert (fh_chain_find_char (&end_cur, &start_cur, ' ', 16));
+
+	assert (end_cur.chain == chain->next->next);
+	assert (end_cur.off == 2);
+
+	struct fh_chain_cpbuf cpbuf = { 0 };
+
+	assert (fh_chain_copy_range (pool, &start_cur, &end_cur, 16, &cpbuf));
+
+	printf ("BUFFER: (%zu) |%.*s|\n", cpbuf.len, (int) cpbuf.len,
+			(char *) cpbuf.raw_buf);
+
+	assert (cpbuf.len == 5);
+	assert (memcmp (cpbuf.raw_buf, "PATCH", 5) == 0);
+
+	fh_pool_free (pool);
 	free_chain (chain);
 }
 
@@ -115,6 +178,8 @@ main (void)
 	void (**fns) (void) = (void (*[]) (void)) {
 		&test_single_buffer,
 		&test_split_buffers,
+		&test_chain_copy,
+		&test_chain_zero_copy,
 		NULL,
 	};
 
