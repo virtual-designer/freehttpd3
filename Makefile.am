@@ -75,14 +75,14 @@ dist-hook:
 		"$(distdir)/build-aux/genchangelog" -f plain -o "$(distdir)/ChangeLog" && \
 		chmod u-w $(distdir)/ChangeLog
 
-dist-fhttpd: dist dist-shar
+dist-fhttpd: dist
 dist-fhttpd-sign: dist-fhttpd
 	if test -z "$(GPG_LOCAL_USER)"; then \
 		echo "The GPG_LOCAL_USER variable is not set - please set it to your GPG key ID."; \
 		exit 1; \
 	fi
 
-	@for format in tar.gz tar.xz tar.bz2 shar.gz; do \
+	@for format in tar.gz tar.xz tar.bz2; do \
 		echo "  SIGN     $(distdir).$$format"; \
 		$(GPG) --batch --yes -a -b --local-user $(GPG_LOCAL_USER) "$(distdir).$$format"; \
 	done
