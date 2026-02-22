@@ -1,0 +1,11 @@
+#                   -*- Org -*-
+
+#+title: Main Index
+#+html_link_home: ./index.html
+#+html_link_up: ./index.html
+#+options: toc:nil
+
++ [[file:introduction/licensing.org][1 Introduction]]
+   - [[file:introduction/licensing.org][1.1 Licensing (AGPL)]]
+   - [[file:introduction/gfdl.org][1.2 GNU Free Documenation License v1.3]]
+   - [[file:introduction/getting-started.org][1.3 Getting started]]

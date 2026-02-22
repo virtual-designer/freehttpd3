@@ -1,5 +1,9 @@
 SUBDIRS = res src tests
 
+if BUILD_DOC
+SUBDIRS += doc
+endif
+
 EXTRA_DIST = \
 	README \
 	NEWS \

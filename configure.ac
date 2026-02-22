@@ -42,20 +42,27 @@ AM_SILENT_RULES([yes])
 
 AC_SUBST([VERSION], FHTTPD_VERSION)
 
+# Paths
 top_builddir=`pwd`
 abs_srcdir="$(dirname "$0")/src"
 abs_srcdir="$(readlink -f "$abs_srcdir")"
 
+# Default flags
 CPPFLAGS="-I$abs_srcdir/include -I$abs_srcdir -I$top_builddir/res -DHAVE_RESOURCES -DHAVE_CONFPATHS_H $CPPFLAGS"
 
+# Arguments
 AC_ARG_ENABLE([maintainer-mode],
             [AS_HELP_STRING([--enable-maintainer-mode], [Enable default flags and settings used by maintainers (default: no).])],
             [enable_maintainer_mode=yes],
             [enable_maintainer_mode=no])
 
-if test "$enable_maintainer_mode" = "yes"; then
-    CFLAGS="-Wall -Wextra -Wpedantic -std=gnu11 $CFLAGS"
-fi
+AC_ARG_ENABLE([doc],
+            [AS_HELP_STRING([--enable-doc], [Build documentation (default: no).])],
+            [enable_doc=yes],
+            [enable_doc=no])
+
+test "$enable_maintainer_mode" = "yes" && CFLAGS="-Wall -Wextra -Wpedantic -std=gnu11 $CFLAGS"
+AM_CONDITIONAL([BUILD_DOC], [test "$enable_doc" = "yes"])
 
 case "$target" in
     *"darwin"*)
@@ -73,7 +80,12 @@ AM_CONDITIONAL([PLAT_DARWIN], [test "$darwin" = "1"])
 AC_PROG_CC
 AM_PROG_AR
 AC_PROG_RANLIB
+AC_PROG_EGREP
 CHECK_PROG_GPG
+
+AS_IF([test "$enable_doc" = "yes"], [
+	CHECK_PROG_EMACS
+], [])
 
 # Checks for libraries.
 
@@ -85,6 +97,7 @@ AC_CHECK_FUNCS([accept4])
 # Checks for library functions.
 
 AC_CONFIG_FILES([Makefile
+				 doc/Makefile
                  res/Makefile
                  src/Makefile
                  src/include/Makefile

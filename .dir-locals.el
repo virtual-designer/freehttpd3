@@ -1,7 +1,10 @@
+;;; Directory Local Variables            -*- no-byte-compile: t -*-
+;;; For more information see (info "(emacs) Directory Variables")
+
 ((nil . ((fill-column . 80)
-         (indent-tabs-mode . t)
-         (tab-width . 4)
-		 (require-final-newline t))))
+		 (indent-tabs-mode . t)
+		 (tab-width . 4)
+		 (require-final-newline . (t))))
 
 (c-mode . ((c-basic-offset . 4)
 		   (c-default-style . "gnu")
