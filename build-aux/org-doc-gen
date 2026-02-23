@@ -158,7 +158,7 @@ EOF
 
 export_file ()
 {
-	LISP=$(cat <<EOF
+	LISP="
 (progn
 (require 'package)
 (package-initialize)
@@ -166,8 +166,7 @@ export_file ()
 (require 'org)
 (setq-default image-scaling-factor 1)
 (global-font-lock-mode t))
-EOF
-		)
+"
 
 	output="$2"
 	input="$1"
