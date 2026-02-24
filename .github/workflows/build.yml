@@ -23,14 +23,14 @@ jobs:
       - name: Install Tools (Ubuntu)
         run: |
           sudo apt update
-          sudo apt install -y xxd valgrind apache2-utils gcc-14 build-essential siege
+          sudo apt install -y xxd valgrind apache2-utils gcc-14 build-essential siege libtool
           sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-14 500
           gcc --version
         if: matrix.os == 'ubuntu-latest'
       
       - name: Install Tools (Darwin)
         run: |
-          brew install automake autoconf
+          brew install automake autoconf libtool
           gcc --version
         if: matrix.os == 'macos-latest'
 
