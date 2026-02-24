@@ -1,8 +1,49 @@
+24-02-2026  Ar Rakin <rakinar2@osndevs.org>
+
+     [*] build: fix tests failing on darwin
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+     [*] ci: add libtool to installation steps in build workflow
+         
+
+     [*] feat: dynamic modules
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+23-02-2026  Ar Rakin <rakinar2@onesoftnet.eu.org>
+
+     [*] build: fix org-doc-gen script
+         
+         Signed-off-by: Ar Rakin <rakinar2@onesoftnet.eu.org>
+         
+
 22-02-2026  Ar Rakin <rakinar2@osndevs.org>
+
+     [*] doc: add documentation files
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+     [*] ci: remove *.shar.gz from build artifacts and exclusions
+         
+         Removed references to *.shar.gz files from the build workflow.
+
+     [*] build: remove 'shar.gz' format from dist-fhttpd target
+         
 
      [*] feat(chain.c): zero copy mechanism
          
          Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+22-02-2026  Conventional Release Action <rakinar2@onesoftnet.eu.org>
+
+     [*] release: v3.11.0 [skip ci]
+         
+         Signed-off-by: Conventional Release Action <rakinar2@onesoftnet.eu.org>
          
 
 21-02-2026  Ar Rakin <rakinar2@osndevs.org>
