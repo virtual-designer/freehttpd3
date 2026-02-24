@@ -117,21 +117,20 @@ AS_IF([test "x$build_type" = "xdebug"], [
 
 # Target check
 case "$target" in
-    darwin*) darwin=1; ;;
+    *darwin*) darwin=1; ;;
 	*) darwin=0; ;;
 esac
 
 AM_CONDITIONAL([PLAT_DARWIN], [test "$darwin" = "1"])
 
 # Checks for programs.
-AC_PROG_AWK
 AC_PROG_CC
 AC_PROG_CPP
 AM_PROG_AR
 AC_PROG_LN_S
 AC_PROG_MKDIR_P
 AC_PROG_EGREP
-CHECK_PROG_GP
+CHECK_PROG_GPG
 
 AS_IF([test "$enable_doc" = "yes"], [
 	CHECK_PROG_EMACS
@@ -145,19 +144,22 @@ AC_CHECK_LIB([dl], [dlopen], [have_libdl=yes], [
 ])
 
 # Define macros
+AC_MSG_CHECKING([for effective shared library extension])
+
 case "$target" in
-	darwin*) shared_library_ext="dylib" ;;
-	cygwin*|mingw*) shared_library_ext="dll" ;;
+	*darwin*) shared_library_ext="dylib" ;;
+	*cygwin*|*mingw*) shared_library_ext="dll" ;;
 	*) shared_library_ext="so" ;;
 esac
 
+AC_MSG_RESULT([$shared_library_ext])
 AC_DEFINE_UNQUOTED([SHARED_LIBRARY_EXTENSION], ["$shared_library_ext"], [The extension shared libraries use on this platform])
 AC_DEFINE_UNQUOTED([FH_MODULE_PATH], ["$FHTTPD_MODULE_PATH"], [The module path to use])
 
 # Checks for header files.
 AC_HEADER_SYS_WAIT
 AC_CHECK_HEADER_STDBOOL
-AC_CHECK_HEADERS([arpa/inet.h fcntl.h inttypes.h netinet/in.h stdint.h sys/socket.h sys/time.h unistd.h])
+AC_CHECK_HEADERS([arpa/inet.h fcntl.h netinet/in.h sys/socket.h sys/time.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 CC_CHECK_VLA_SUPPORT
