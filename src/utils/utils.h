@@ -26,5 +26,6 @@
 _noreturn void freeze (void);
 bool fd_set_nonblocking (fd_t fd);
 bool fd_add_flags (fd_t fd, int new_flags);
+const char *get_file_ext (const char *filename);
 
 #endif /* FH_UTILS_H */

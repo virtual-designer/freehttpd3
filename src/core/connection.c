@@ -17,19 +17,22 @@
  * along with OSN freehttpd.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <stdlib.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
 #include "connection.h"
+#include "server.h"
 #include "mm/pool.h"
 
 struct fh_conn *
-fh_conn_create (fd_t client_fd, const struct sockaddr_storage *client_addr)
+fh_conn_create (const struct fh_server *server, fd_t client_fd,
+				const struct sockaddr_storage *client_addr)
 {
-	struct fh_pool *pool = fh_pool_create (4096);
+	struct fh_pool *pool
+		= fh_pool_create (4096 + server->module_conn_ctx_total_size);
 
 	if (!pool)
 		return NULL;
@@ -45,6 +48,15 @@ fh_conn_create (fd_t client_fd, const struct sockaddr_storage *client_addr)
 
 	conn->pool = pool;
 	conn->sockfd = client_fd;
+	conn->module_data
+		= fh_pool_alloc (pool, server->module_conn_ctx_total_size);
+	conn->module_data_size = server->module_conn_ctx_total_size;
+
+	if (!conn->module_data)
+	{
+		fh_pool_free (pool);
+		return NULL;
+	}
 
 	if (client_addr)
 	{

@@ -19,6 +19,7 @@
 
 #include <fcntl.h>
 #include <stdbool.h>
+#include <string.h>
 #include <unistd.h>
 
 #include "types.h"
@@ -51,4 +52,21 @@ fd_add_flags (fd_t fd, int new_flags)
 		return false;
 
 	return fcntl (fd, F_SETFL, flags | new_flags) == 0;
+}
+
+const char *
+get_file_ext (const char *filename)
+{
+	size_t len = strlen (filename);
+
+	for (size_t i = 1; i <= len; i++)
+	{
+		if (filename[len - i] == '/')
+			break;
+
+		if (filename[len - i] == '.')
+			return i == 1 ? NULL : (filename + len - i + 1);
+	}
+
+	return NULL;
 }

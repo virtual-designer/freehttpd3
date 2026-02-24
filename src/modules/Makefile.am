@@ -18,24 +18,16 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with OSN freehttpd.  If not, see <https://www.gnu.org/licenses/>.
 
-noinst_LIBRARIES = libcore.a
-libcore_a_SOURCES = \
-	xpoll.c \
-	xpoll.h \
-	server.c \
-	server.h \
-	config.c \
-	config.h \
-	worker.c \
-	worker.h \
-	connection.c \
-	connection.h \
-	module.c \
-	module.h
+COMMON_MODULE_CFLAGS = -module -avoid-version -shared
 
-AM_CFLAGS = $(EXPORTED_AM_CFLAGS)
-AM_CPPFLAGS = $(EXPORTED_AM_CPPFLAGS)
-AM_LDFLAGS = $(EXPORTED_AM_LDFLAGS)
+moduledir = $(FHTTPD_MODULE_PATH)
+module_LTLIBRARIES =
+
+if ENABLE_MOD_HTTP1X
+module_LTLIBRARIES += mod_http1x.la
+mod_http1x_la_SOURCES = mod_http1x.c
+mod_http1x_la_LDFLAGS = $(COMMON_MODULE_CFLAGS)
+endif
 
 distclean-local:
 	rm -rf .deps

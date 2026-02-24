@@ -17,8 +17,6 @@
  * along with OSN freehttpd.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "core/xpoll.h"
-#include "types.h"
 #define FH_LOG_MODULE_NAME "server"
 
 #include "platform.h"
@@ -33,6 +31,7 @@
 #include <arpa/inet.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <fts.h>
 #include <inttypes.h>
 #include <netinet/in.h>
 #include <signal.h>
@@ -43,20 +42,29 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #include "compat.h"
 #include "connection.h"
 #include "core/config.h"
+#include "core/xpoll.h"
 #include "hash/itable.h"
-#include "log/log.h"
-#include "server.h"
-#include "utils/utils.h"
-#include "worker.h"
 #include "http/http1x.h"
+#include "log/log.h"
 #include "mm/chain.h"
 #include "mm/pool.h"
+#include "module.h"
+#include "server.h"
+#include "types.h"
+#include "utils/utils.h"
+#include "worker.h"
+
+#ifdef HAVE_CONFIG_H
+#	include "../../config.h"
+#endif /* HAVE_CONFIG_H */
 
 #define XPOLL_MAX_EVENTS 4096
 
@@ -72,12 +80,18 @@ fh_server_create (struct fh_config *config)
 
 	server->config = config;
 	server->conn_table = itable_create (4096);
+
 	return server;
 }
 
 void
 fh_server_destroy (struct fh_server *server)
 {
+	for (size_t i = 0; i < server->module_count; i++)
+		fh_module_handle_cleanup (server->modules[i]);
+
+	free (server->modules);
+
 	if (server->xp)
 		xpoll_destroy (server->xp);
 
@@ -112,11 +126,81 @@ fh_server_destroy (struct fh_server *server)
 	free (server);
 }
 
+static bool
+fh_server_register_module (struct fh_server *server,
+						   struct fh_module_handle *handle)
+{
+	struct fh_module_handle **modules = realloc (server->modules, sizeof (*modules) * (server->module_count + 1));
+
+	if (!modules)
+		return false;
+
+	server->modules = modules;
+	server->modules[server->module_count++] = handle;
+
+	return true;
+}
+
+static bool
+fh_server_load_modules (struct fh_server *server, char *module_dir)
+{
+	char *MODULE_DIR_PATH = module_dir ? module_dir : FH_MODULE_PATH;
+
+	FTS *fts
+		= fts_open ((char *[]) { MODULE_DIR_PATH, NULL }, FTS_LOGICAL, NULL);
+
+	if (!fts)
+		return false;
+
+	FTSENT *ent;
+
+	while ((ent = fts_read (fts)) != NULL)
+	{
+		if (!(ent->fts_info & FTS_F))
+			continue;
+
+		const char *ext = get_file_ext (fts->fts_path);
+
+		if (!ext
+			|| strncmp (ext, SHARED_LIBRARY_EXTENSION,
+						sizeof (SHARED_LIBRARY_EXTENSION)))
+			continue;
+
+		fh_pr_info ("Loading module: %s", ent->fts_path);
+
+		struct fh_module_handle *handle
+			= fh_module_handle_load (server, ent->fts_path);
+
+		if (!handle || handle->err)
+		{
+			fh_pr_err ("Error loading module: %s: %s", ent->fts_path,
+					   fh_module_handle_get_last_err (handle));
+
+			if (handle)
+				fh_module_handle_cleanup (handle);
+
+			continue;
+		}
+
+		if (!fh_server_register_module (server, handle))
+		{
+			fh_pr_err ("Unable to register module: %s: %s", ent->fts_path,
+					   strerror (errno));
+			fh_module_handle_cleanup (handle);
+		}
+	}
+
+	fts_close (fts);
+	return true;
+}
+
 static fd_t
-fh_server_create_socket (struct fh_server *server __attribute__((unused)), int domain, uint16_t port)
+fh_server_create_socket (struct fh_server *server __attribute__ ((unused)),
+						 int domain, uint16_t port)
 {
 #ifdef SOCK_NONBLOCK
-	fd_t sockfd = socket (domain, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
+	fd_t sockfd
+		= socket (domain, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
 
 	if (sockfd < 0)
 		return -1;
@@ -321,6 +405,9 @@ fh_server_start (struct fh_server *server)
 	if (!fh_server_create_sockets (server))
 		return false;
 
+	if (!fh_server_load_modules (server, NULL))
+		return false;
+
 	struct sigaction act;
 
 	sigemptyset (&act.sa_mask);
@@ -336,10 +423,14 @@ fh_server_start (struct fh_server *server)
 
 	while (true)
 	{
-		pause ();
+		for (size_t i = 0; i < server->worker_count; i++)
+		{
+			int stat_loc;
+			waitpid (server->workers[i], &stat_loc, 0);
 
-		if (should_terminate)
-			return true;
+			if (should_terminate)
+				return true;
+		}
 	}
 
 	return true;
@@ -349,7 +440,7 @@ static bool
 fh_server_add_conn (struct fh_server *server, fd_t client_fd,
 					const struct sockaddr_storage *client_addr)
 {
-	struct fh_conn *conn = fh_conn_create (client_fd, client_addr);
+	struct fh_conn *conn = fh_conn_create (server, client_fd, client_addr);
 
 	if (!conn)
 		return false;
@@ -532,8 +623,8 @@ fh_server_wait (struct fh_server *server, bool *should_terminate)
 
 			if (XPOLL_EVENT_IS_ERR (&events[i]))
 			{
-				fh_pr_err ("xpoll error: client_fd=%d, errno=%d, msg=\"%s\"", fd,
-						   errno, strerror (errno));
+				fh_pr_err ("xpoll error: client_fd=%d, errno=%d, msg=\"%s\"",
+						   fd, errno, strerror (errno));
 				fh_server_close_conn (server, conn);
 				continue;
 			}

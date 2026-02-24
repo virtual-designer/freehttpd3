@@ -20,8 +20,8 @@
 #ifndef FHTTPD_SERVER_H
 #define FHTTPD_SERVER_H
 
-#include <stdlib.h>
 #include <stdbool.h>
+#include <stdlib.h>
 #include <sys/types.h>
 
 #include "core/config.h"
@@ -34,6 +34,8 @@ struct sockfd_info
 	int family;
 };
 
+struct fh_module_handle;
+
 struct fh_server
 {
 	struct xpoll *xp;
@@ -42,6 +44,9 @@ struct fh_server
 	struct itable *sockfd_table;
 	/* (fd_t) => (struct fh_conn *) */
 	struct itable *conn_table;
+	struct fh_module_handle **modules;
+	size_t module_count;
+	size_t module_conn_ctx_total_size;
 	pid_t *workers;
 	size_t worker_count;
 	size_t current_worker_index;
