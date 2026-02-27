@@ -1,22 +1,23 @@
 /*
  * This file is part of OSN freehttpd.
- * 
+ *
  * Copyright (C) 2025-2026  OSN Developers.
  *
  * OSN freehttpd is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * OSN freehttpd is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with OSN freehttpd.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -29,7 +30,7 @@ struct fh_pool_large_chunk
 {
 	void *start;
 	size_t capacity;
-	void (*cleanup_cb)(void *);
+	void (*cleanup_cb) (void *);
 	struct fh_pool_large_chunk *prev;
 };
 
@@ -40,10 +41,18 @@ struct fh_pool_chunk
 	size_t capacity, offset;
 };
 
+struct fh_pool_child
+{
+	struct fh_pool *pool;
+	struct fh_pool_child *prev;
+};
+
 struct fh_pool
 {
 	struct fh_pool_chunk *last;
 	struct fh_pool_large_chunk *last_lg;
+	struct fh_pool_child *children;
+	bool is_freeable;
 };
 
 static struct fh_pool_chunk *
@@ -62,22 +71,56 @@ fh_pool_new_chunk (size_t capacity)
 	return chunk;
 }
 
+static inline bool
+fh_pool_init (struct fh_pool *pool, size_t initial_capacity)
+{
+	pool->children = NULL;
+	pool->last_lg = NULL;
+	pool->last = initial_capacity ? fh_pool_new_chunk (initial_capacity) : NULL;
+
+	if (initial_capacity && !pool->last)
+		return false;
+
+	return true;
+}
+
 struct fh_pool *
 fh_pool_create (size_t initial_capacity)
 {
 	struct fh_pool *pool = malloc (sizeof (*pool));
 
-   	if (!pool)
-   		return NULL;
+	if (!pool)
+		return NULL;
 
-	pool->last_lg = NULL;
-   	pool->last = initial_capacity ? fh_pool_new_chunk (initial_capacity) : NULL;
+	if (!fh_pool_init (pool, initial_capacity))
+	{
+		free (pool);
+		return NULL;
+	}
 
-	if (initial_capacity && !pool->last)
-   	{
-   		free (pool);
-   		return NULL;
-   	}
+	pool->is_freeable = true;
+	return pool;
+}
+
+struct fh_pool *
+fh_pool_create_child (struct fh_pool *parent, size_t initial_capacity)
+{
+	struct fh_pool *pool = fh_pool_alloc (parent, sizeof (*pool) + sizeof (*pool->children));
+
+	if (!pool)
+		return NULL;
+
+	if (!fh_pool_init (pool, initial_capacity))
+	{
+		free (pool);
+		return NULL;
+	}
+
+	struct fh_pool_child *child = (struct fh_pool_child *) (pool + 1);
+
+	child->prev = parent->children;
+	parent->children = child;
+	pool->is_freeable = false;
 
 	return pool;
 }
@@ -85,6 +128,14 @@ fh_pool_create (size_t initial_capacity)
 void
 fh_pool_free (struct fh_pool *pool)
 {
+	struct fh_pool_child *child = pool->children;
+
+	while (child)
+	{
+		fh_pool_free (child->pool);
+		child = child->prev;
+	}
+
 	struct fh_pool_chunk *chunk = pool->last;
 
 	while (chunk)
@@ -108,7 +159,8 @@ fh_pool_free (struct fh_pool *pool)
 		lg_chunk = prev;
 	}
 
-	free (pool);
+	if (pool->is_freeable)
+		free (pool);
 }
 
 void *
@@ -116,7 +168,8 @@ fh_pool_alloc (struct fh_pool *pool, size_t size)
 {
 	if (size > POOL_LARGE_THRESHOLD)
 	{
-		struct fh_pool_large_chunk *lg_chunk = malloc (sizeof (*lg_chunk) + size);
+		struct fh_pool_large_chunk *lg_chunk
+			= malloc (sizeof (*lg_chunk) + size);
 
 		if (!lg_chunk)
 			return NULL;

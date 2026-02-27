@@ -1,28 +1,32 @@
 /*
  * This file is part of OSN freehttpd.
- * 
+ *
  * Copyright (C) 2025-2026  OSN Developers.
  *
  * OSN freehttpd is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * OSN freehttpd is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with OSN freehttpd.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "core/hooks.h"
 #define FH_LOG_MODULE_NAME "mod_http1x"
 
+#include <inttypes.h>
+#include <assert.h>
 #include <stddef.h>
+#include <stdint.h>
+#include <stdlib.h>
 
 #include "core/connection.h"
+#include "core/hooks.h"
 #include "core/module.h"
 #include "log/log.h"
 #include "mm/chain.h"
@@ -150,18 +154,36 @@ mod_http1x_parse (struct mod_http1x_ctx *ctx)
 }
 
 static bool
-fh_conn_probe (struct fh_module *module, struct fh_conn *conn)
+mod_http1x_conn_probe (struct fh_module *module, struct fh_conn *conn)
 {
-	fh_pr_debug ("New connection");
+	struct mod_http1x_ctx *ctx = mod_http1x_ctx_create (NULL, 0);
+
+	if (!ctx)
+		return false;
+
+	fh_conn_set_module_data (module, conn, ctx,
+							 (void (*) (void *)) &mod_http1x_ctx_free);
+
+	fh_pr_info ("New connection: %" PRIu64, conn->id);
+	return true;
+}
+
+static bool
+mod_http1x_conn_cleanup (struct fh_module *module, struct fh_conn *conn)
+{
+	fh_pr_info ("Closing connection: %" PRIu64, conn->id);
 	return true;
 }
 
 static bool
 mod_http1x_init (struct fh_module *module)
 {
-	fh_pr_info ("Initialized");
 	fh_module_register_hook (module, FH_HOOK_CONN_PROBE,
-							 FH_HOOK_CB (&fh_conn_probe));
+							 FH_HOOK_CB (&mod_http1x_conn_probe));
+	fh_module_register_hook (module, FH_HOOK_CONN_CLEANUP,
+							 FH_HOOK_CB (&mod_http1x_conn_cleanup));
+
+	fh_pr_info ("Initialized");
 	return true;
 }
 

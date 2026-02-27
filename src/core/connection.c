@@ -31,17 +31,23 @@
 #include "server.h"
 #include "types.h"
 
+static uint64_t conn_id = 0;
+
 struct fh_conn *
 fh_conn_create (const struct fh_server *server, fd_t client_fd,
 				const struct sockaddr_storage *client_addr)
 {
-	struct fh_pool *pool = fh_pool_create (
-		4096 + (sizeof (struct fh_conn_module_data) * server->module_count));
+	const size_t client_addr_size = (client_addr ? sizeof (*client_addr) : 0);
+	const size_t pool_prealloc_size
+		= 4096 + sizeof (struct fh_conn) + client_addr_size
+		  + (sizeof (struct fh_conn_module_data) * server->module_count)
+		  + (sizeof (bool) * server->module_count);
+
+	struct fh_pool *pool = fh_pool_create (pool_prealloc_size);
 
 	if (!pool)
 		return NULL;
 
-	const size_t client_addr_size = (client_addr ? sizeof (*client_addr) : 0);
 	struct fh_conn *conn = fh_pool_alloc (
 		pool, sizeof (*conn) + client_addr_size
 				  + (sizeof (struct fh_conn_module_data) * server->module_count)
@@ -53,6 +59,7 @@ fh_conn_create (const struct fh_server *server, fd_t client_fd,
 		return NULL;
 	}
 
+	conn->id = conn_id++;
 	conn->pool = pool;
 	conn->sockfd = client_fd;
 	conn->module_data = (struct fh_conn_module_data *) (((uint8_t *) (conn + 1))
@@ -95,7 +102,7 @@ fh_conn_destroy (struct fh_conn *conn)
 	while (module_data)
 	{
 		if (module_data->cleanup_cb)
-			module_data->cleanup_cb (module_data->ptr, module_data->user_data);
+			module_data->cleanup_cb (module_data->ptr);
 
 		module_data = module_data->prev;
 	}
@@ -115,8 +122,7 @@ fh_conn_get_module_data (struct fh_module *module, struct fh_conn *conn)
 
 bool
 fh_conn_set_module_data (struct fh_module *module, struct fh_conn *conn,
-						 void *data, void (*cleanup_cb) (void *, void *),
-						 void *user_data)
+						 void *data, void (*cleanup_cb) (void *))
 {
 	if (module->id >= conn->module_data_count)
 		return false;
@@ -125,7 +131,6 @@ fh_conn_set_module_data (struct fh_module *module, struct fh_conn *conn,
 
 	module_data->ptr = data;
 	module_data->cleanup_cb = cleanup_cb;
-	module_data->user_data = user_data;
 
 	if (module_data->cleanup_cb && !conn->module_data_initialized[module->id])
 	{

@@ -1,18 +1,18 @@
 /*
  * This file is part of OSN freehttpd.
- * 
+ *
  * Copyright (C) 2025  OSN Developers.
  *
  * OSN freehttpd is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * OSN freehttpd is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with OSN freehttpd.  If not, see <https://www.gnu.org/licenses/>.
  */
@@ -42,9 +42,9 @@ void fh_log_set_worker_pid (pid_t pid);
 #ifdef FH_LOG_MODULE_NAME
 	#ifdef FH_LOG_USE_COLORS
 		#define _FH_LOG_MODULE "\033[33m" FH_LOG_MODULE_NAME ":\033[0m "
-	#else
+	#else /* not FH_LOG_USE_COLORS */
 		#define _FH_LOG_MODULE FH_LOG_MODULE_NAME ": "
-	#endif
+	#endif /* FH_LOG_USE_COLORS */
 #else /* not FH_LOG_MODULE */
 	#define _FH_LOG_MODULE
 #endif /* FH_LOG_MODULE */

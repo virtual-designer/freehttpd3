@@ -33,13 +33,13 @@ struct fh_module;
 struct fh_conn_module_data
 {
 	void *ptr;
-	void (*cleanup_cb) (void *, void *);
+	void (*cleanup_cb) (void *);
 	struct fh_conn_module_data *prev;
-	void *user_data;
 };
 
 struct fh_conn
 {
+	uint64_t id;
 	struct sockaddr_storage *client_addr;
 	fd_t sockfd;
 	uint16_t port;
@@ -56,7 +56,6 @@ void fh_conn_destroy (struct fh_conn *conn);
 void *fh_conn_get_module_data (struct fh_module *module, struct fh_conn *conn);
 bool fh_conn_set_module_data (struct fh_module *module, struct fh_conn *conn,
 							  void *data,
-							  void (*cleanup_cb) (void *, void *),
-							  void *user_data);
+							  void (*cleanup_cb) (void *));
 
 #endif /* FHTTPD_CONNECTION_H */
