@@ -50,9 +50,9 @@
 #include "compat.h"
 #include "connection.h"
 #include "core/config.h"
+#include "core/hooks.h"
 #include "core/xpoll.h"
 #include "hash/itable.h"
-#include "http/http1x.h"
 #include "log/log.h"
 #include "mm/chain.h"
 #include "mm/pool.h"
@@ -80,6 +80,13 @@ fh_server_create (struct fh_config *config)
 
 	server->config = config;
 	server->conn_table = itable_create (4096);
+	server->hook_list = fh_hook_list_create ();
+
+	if (!server->hook_list)
+	{
+		free (server);
+		return NULL;
+	}
 
 	return server;
 }
@@ -87,13 +94,15 @@ fh_server_create (struct fh_config *config)
 void
 fh_server_destroy (struct fh_server *server)
 {
+	fh_hook_list_free (server->hook_list);
+
 	for (size_t i = 0; i < server->module_count; i++)
-		fh_module_handle_cleanup (server->modules[i]);
+		fh_module_handle_cleanup (server->modules[i], false);
 
 	free (server->modules);
 
-	if (server->xp)
-		xpoll_destroy (server->xp);
+	if (server->xpoll)
+		xpoll_destroy (server->xpoll);
 
 	for_each_itable_entry (server->sockfd_table, sockfd)
 	{
@@ -130,14 +139,31 @@ static bool
 fh_server_register_module (struct fh_server *server,
 						   struct fh_module_handle *handle)
 {
-	struct fh_module_handle **modules = realloc (server->modules, sizeof (*modules) * (server->module_count + 1));
+	if (handle->public_module->id >= server->module_count)
+	{
+		struct fh_module_handle **modules
+			= realloc (server->modules,
+					   sizeof (*modules) * (handle->public_module->id + 1));
 
-	if (!modules)
+		if (!modules)
+			return false;
+
+		server->modules = modules;
+		server->module_count = handle->public_module->id + 1;
+	}
+
+	server->modules[handle->public_module->id] = handle;
+	return true;
+}
+
+static bool
+fh_server_unregister_module (struct fh_server *server,
+							 const struct fh_module_handle *handle)
+{
+	if (handle->public_module->id >= server->module_count)
 		return false;
 
-	server->modules = modules;
-	server->modules[server->module_count++] = handle;
-
+	server->modules[handle->public_module->id] = NULL;
 	return true;
 }
 
@@ -145,9 +171,9 @@ static bool
 fh_server_load_modules (struct fh_server *server, char *module_dir)
 {
 	char *MODULE_DIR_PATH = module_dir ? module_dir : FH_MODULE_PATH;
+	char *paths[] = { MODULE_DIR_PATH, NULL };
 
-	FTS *fts
-		= fts_open ((char *[]) { MODULE_DIR_PATH, NULL }, FTS_LOGICAL, NULL);
+	FTS *fts = fts_open (paths, FTS_LOGICAL, NULL);
 
 	if (!fts)
 		return false;
@@ -177,7 +203,7 @@ fh_server_load_modules (struct fh_server *server, char *module_dir)
 					   fh_module_handle_get_last_err (handle));
 
 			if (handle)
-				fh_module_handle_cleanup (handle);
+				fh_module_handle_cleanup (handle, false);
 
 			continue;
 		}
@@ -186,7 +212,7 @@ fh_server_load_modules (struct fh_server *server, char *module_dir)
 		{
 			fh_pr_err ("Unable to register module: %s: %s", ent->fts_path,
 					   strerror (errno));
-			fh_module_handle_cleanup (handle);
+			fh_module_handle_cleanup (handle, false);
 		}
 	}
 
@@ -366,16 +392,16 @@ fh_server_fork_workers (struct fh_server *server)
 			server->is_worker = true;
 			server->current_worker_index = i;
 
-			if (!server->xp)
-				server->xp = xpoll_create ();
+			if (!server->xpoll)
+				server->xpoll = xpoll_create ();
 
-			if (!server->xp)
+			if (!server->xpoll)
 				_exit (EXIT_FAILURE);
 
 			for_each_itable_entry (server->sockfd_table, sockfd)
 			{
-				if (xpoll_register_fd (server->xp, (fd_t) sockfd->key, XPOLL_IN,
-									   0)
+				if (xpoll_register_fd (server->xpoll, (fd_t) sockfd->key,
+									   XPOLL_IN, 0)
 					< 0)
 					_exit (EXIT_FAILURE);
 			}
@@ -445,7 +471,7 @@ fh_server_add_conn (struct fh_server *server, fd_t client_fd,
 	if (!conn)
 		return false;
 
-	if (xpoll_register_fd (server->xp, client_fd, XPOLL_IN, XPOLL_ET) != 0)
+	if (xpoll_register_fd (server->xpoll, client_fd, XPOLL_IN, XPOLL_ET) != 0)
 	{
 		fh_conn_destroy (conn);
 		return false;
@@ -453,9 +479,24 @@ fh_server_add_conn (struct fh_server *server, fd_t client_fd,
 
 	if (!itable_set (server->conn_table, (uint64_t) client_fd, conn))
 	{
-		xpoll_unregister_fd (server->xp, client_fd, XPOLL_IN);
+		xpoll_unregister_fd (server->xpoll, client_fd, XPOLL_IN);
 		fh_conn_destroy (conn);
 		return false;
+	}
+
+	for (struct fh_hook_cb *cb = server->hook_list->heads[FH_HOOK_CONN_PROBE];
+		 cb; cb = cb->next)
+	{
+		if (cb->module_id >= server->module_count)
+			continue;
+
+		fh_hook_conn_probe_cb_t final_cb = (fh_hook_conn_probe_cb_t) cb->cb_ptr;
+		bool ret
+			= final_cb (server->modules[cb->module_id]->public_module, conn);
+
+		if (!ret)
+			fh_pr_err ("Module '%s' CONN_PROBE hook failed",
+					   server->modules[cb->module_id]->public_module->name);
 	}
 
 	return true;
@@ -464,8 +505,25 @@ fh_server_add_conn (struct fh_server *server, fd_t client_fd,
 static bool
 fh_server_close_conn (struct fh_server *server, struct fh_conn *conn)
 {
-	xpoll_unregister_fd (server->xp, conn->sockfd, XPOLL_IN | XPOLL_OUT);
+	xpoll_unregister_fd (server->xpoll, conn->sockfd, XPOLL_IN | XPOLL_OUT);
 	itable_remove (server->conn_table, (uint64_t) conn->sockfd);
+
+	for (struct fh_hook_cb *cb = server->hook_list->heads[FH_HOOK_CONN_CLEANUP];
+		 cb; cb = cb->next)
+	{
+		if (cb->module_id >= server->module_count)
+			continue;
+
+		fh_hook_conn_cleanup_cb_t final_cb
+			= (fh_hook_conn_cleanup_cb_t) cb->cb_ptr;
+		bool ret
+			= final_cb (server->modules[cb->module_id]->public_module, conn);
+
+		if (!ret)
+			fh_pr_err ("Module '%s' CONN_CLEANUP hook failed",
+					   server->modules[cb->module_id]->public_module->name);
+	}
+
 	fh_conn_destroy (conn);
 	return true;
 }
@@ -473,7 +531,7 @@ fh_server_close_conn (struct fh_server *server, struct fh_conn *conn)
 static bool
 fh_server_close_fd (struct fh_server *server, fd_t fd)
 {
-	xpoll_unregister_fd (server->xp, fd, XPOLL_IN | XPOLL_OUT);
+	xpoll_unregister_fd (server->xpoll, fd, XPOLL_IN | XPOLL_OUT);
 	itable_remove (server->conn_table, (uint64_t) fd);
 	close (fd);
 	return true;
@@ -581,12 +639,13 @@ fh_server_wait (struct fh_server *server, bool *should_terminate)
 {
 	xevent_t events[XPOLL_MAX_EVENTS];
 
-	while (true)
+	for (;;)
 	{
 		if (*should_terminate)
 			return true;
 
-		int n_fds = xpoll_wait (server->xp, events, XPOLL_MAX_EVENTS, 5000);
+		const int n_fds
+			= xpoll_wait (server->xpoll, events, XPOLL_MAX_EVENTS, 5000);
 
 		if (n_fds < 0)
 		{

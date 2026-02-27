@@ -110,6 +110,8 @@ AM_CONDITIONAL([BUILD_DOC], [test "$enable_doc" = "yes"])
 AC_MSG_CHECKING([whether to enable debug mode])
 AS_IF([test "x$build_type" = "xdebug"], [
     AC_MSG_RESULT([yes])
+    CONCAT_SPACED_STRING([CFLAGS], [-g])
+    CONCAT_SPACED_STRING([LDFLAGS], [-g])
 ], [
     AC_MSG_RESULT([no])
 	CONCAT_SPACED_STRING([CPPFLAGS], [-DNDEBUG])
@@ -206,7 +208,6 @@ AC_CONFIG_FILES([Makefile
                  src/include/Makefile
                  src/core/Makefile
                  src/hash/Makefile
-                 src/http/Makefile
                  src/mm/Makefile
                  src/log/Makefile
                  src/utils/Makefile

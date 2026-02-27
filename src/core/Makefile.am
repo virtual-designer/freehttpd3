@@ -31,7 +31,9 @@ libcore_a_SOURCES = \
 	connection.c \
 	connection.h \
 	module.c \
-	module.h
+	module.h \
+	hooks.c \
+	hooks.h
 
 AM_CFLAGS = $(EXPORTED_AM_CFLAGS)
 AM_CPPFLAGS = $(EXPORTED_AM_CPPFLAGS)

@@ -18,14 +18,13 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with OSN freehttpd.  If not, see <https://www.gnu.org/licenses/>.
 
-SUBDIRS = include core hash http mm log utils modules
+SUBDIRS = include core hash mm log utils modules
 
 bin_PROGRAMS = freehttpd
 freehttpd_SOURCES = fhttpd.c
 freehttpd_LDADD = \
 	core/libcore.a \
 	hash/libhash.a \
-	http/libhttp.a \
 	log/liblog.a \
 	utils/libutils.a \
 	mm/libmm.a \
