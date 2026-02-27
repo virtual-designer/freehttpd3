@@ -1,18 +1,18 @@
 /*
  * This file is part of OSN freehttpd.
- * 
+ *
  * Copyright (C) 2025-2026  OSN Developers.
  *
  * OSN freehttpd is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * OSN freehttpd is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with OSN freehttpd.  If not, see <https://www.gnu.org/licenses/>.
  */
@@ -221,7 +221,7 @@ fh_module_handle_cleanup (struct fh_module_handle *handle, bool discard_id)
 	free (handle);
 }
 
-static struct fh_module_handle *
+__attribute__((unused)) static struct fh_module_handle *
 fh_module_get_handle (struct fh_module *module)
 {
 	uint8_t *ptr = (uint8_t *) module;
@@ -244,6 +244,16 @@ fh_module_register_hooks (struct fh_module *module,
 		ret &= fh_hook_add (module->server->hook_list, module->id,
 							FH_HOOK_CONN_CLEANUP,
 							(fh_hook_cb_generic_t) hooks->conn_cleanup_cb);
+
+	if (hooks->stream_read_cb)
+		ret &= fh_hook_add (module->server->hook_list, module->id,
+							FH_HOOK_STREAM_READ,
+							(fh_hook_cb_generic_t) hooks->stream_read_cb);
+
+	if (hooks->stream_write_cb)
+		ret &= fh_hook_add (module->server->hook_list, module->id,
+							FH_HOOK_STREAM_WRITE,
+							(fh_hook_cb_generic_t) hooks->stream_write_cb);
 
 	return ret;
 }

@@ -1,18 +1,18 @@
 /*
  * This file is part of OSN freehttpd.
- * 
+ *
  * Copyright (C) 2025-2026  OSN Developers.
  *
  * OSN freehttpd is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * OSN freehttpd is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with OSN freehttpd.  If not, see <https://www.gnu.org/licenses/>.
  */
@@ -20,6 +20,7 @@
 #ifndef FH_HOOKS_H
 #define FH_HOOKS_H
 
+#include "mm/chain.h"
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -34,17 +35,26 @@ typedef bool (*fh_hook_conn_probe_cb_t) (struct fh_module *module,
 										 struct fh_conn *conn);
 typedef bool (*fh_hook_conn_cleanup_cb_t) (struct fh_module *module,
 										   struct fh_conn *conn);
+typedef bool (*fh_hook_stream_read_cb_t) (struct fh_module *module,
+										  struct fh_conn *conn,
+										  struct fh_chain_cur *last_cur);
+typedef bool (*fh_hook_stream_write_cb_t) (struct fh_module *module,
+										   struct fh_conn *conn);
 
 struct fh_mod_hooks
 {
 	fh_hook_conn_probe_cb_t conn_probe_cb;
 	fh_hook_conn_cleanup_cb_t conn_cleanup_cb;
+	fh_hook_stream_read_cb_t stream_read_cb;
+	fh_hook_stream_write_cb_t stream_write_cb;
 };
 
 enum fh_hook_type
 {
 	FH_HOOK_CONN_PROBE,
 	FH_HOOK_CONN_CLEANUP,
+	FH_HOOK_STREAM_READ,
+	FH_HOOK_STREAM_WRITE,
 	__FH_HOOK_TYPE_MAX
 };
 

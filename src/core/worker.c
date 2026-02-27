@@ -17,8 +17,6 @@
  * along with OSN freehttpd.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "compat.h"
-#include "core/server.h"
 #define FH_LOG_MODULE_NAME "worker"
 
 #include <signal.h>
@@ -30,6 +28,8 @@
 #include "log/log.h"
 #include "utils/utils.h"
 #include "worker.h"
+#include "compat.h"
+#include "core/server.h"
 
 static bool should_terminate = false;
 

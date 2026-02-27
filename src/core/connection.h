@@ -44,10 +44,13 @@ struct fh_conn
 	fd_t sockfd;
 	uint16_t port;
 	struct fh_pool *pool;
+	struct fh_pool *chain_pool;
 	struct fh_conn_module_data *module_data;
 	bool *module_data_initialized;
 	struct fh_conn_module_data *module_data_tail;
 	size_t module_data_count;
+	struct fh_chain_list *chain_list;
+	struct fh_chain_cur *last_proc_cur;
 };
 
 struct fh_conn *fh_conn_create (const struct fh_server *server, fd_t client_fd,
@@ -55,7 +58,6 @@ struct fh_conn *fh_conn_create (const struct fh_server *server, fd_t client_fd,
 void fh_conn_destroy (struct fh_conn *conn);
 void *fh_conn_get_module_data (struct fh_module *module, struct fh_conn *conn);
 bool fh_conn_set_module_data (struct fh_module *module, struct fh_conn *conn,
-							  void *data,
-							  void (*cleanup_cb) (void *));
+							  void *data, void (*cleanup_cb) (void *));
 
 #endif /* FHTTPD_CONNECTION_H */

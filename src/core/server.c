@@ -94,13 +94,6 @@ fh_server_create (struct fh_config *config)
 void
 fh_server_destroy (struct fh_server *server)
 {
-	fh_hook_list_free (server->hook_list);
-
-	for (size_t i = 0; i < server->module_count; i++)
-		fh_module_handle_cleanup (server->modules[i], false);
-
-	free (server->modules);
-
 	if (server->xpoll)
 		xpoll_destroy (server->xpoll);
 
@@ -119,6 +112,13 @@ fh_server_destroy (struct fh_server *server)
 				server->sockfd_table->count, server->conn_table->count);
 	itable_destroy (server->conn_table);
 	itable_destroy (server->sockfd_table);
+
+	fh_hook_list_free (server->hook_list);
+
+	for (size_t i = 0; i < server->module_count; i++)
+		fh_module_handle_cleanup (server->modules[i], false);
+
+	free (server->modules);
 
 	if (!server->is_worker)
 	{
@@ -156,7 +156,7 @@ fh_server_register_module (struct fh_server *server,
 	return true;
 }
 
-static bool
+__attribute__((unused)) static bool
 fh_server_unregister_module (struct fh_server *server,
 							 const struct fh_module_handle *handle)
 {
@@ -623,13 +623,88 @@ fh_server_accept (struct fh_server *server, fd_t server_fd,
 static bool
 fh_server_on_read (struct fh_server *server, struct fh_conn *conn)
 {
-	fh_server_close_conn (server, conn);
+	if (!unlikely (server->hook_list->heads[FH_HOOK_STREAM_READ]))
+	{
+		fh_pr_err (
+			"No STREAM_READ hook was registered. Please ensure all required "
+			"protocol modules are correctly installed and loaded.");
+		fh_server_close_conn (server, conn);
+		return false;
+	}
+
+	if (!conn->chain_pool)
+	{
+		conn->chain_pool = fh_pool_create (4096);
+
+		if (!conn->chain_pool)
+		{
+			fh_server_close_conn (server, conn);
+			return false;
+		}
+	}
+
+	if (!conn->chain_list)
+	{
+		conn->chain_list
+			= fh_pool_zalloc (conn->pool, sizeof (*conn->chain_list)
+											  + sizeof (*conn->last_proc_cur));
+
+		if (!conn->chain_list)
+		{
+			fh_server_close_conn (server, conn);
+			return false;
+		}
+
+		conn->last_proc_cur = (struct fh_chain_cur *) (conn->chain_list + 1);
+	}
+
+	if (!fh_chain_read (conn->chain_pool, conn->sockfd, &conn->chain_list->head,
+						&conn->chain_list->tail))
+	{
+		fh_pr_err ("Connection %" PRIu64 ": Read error: %s", conn->id,
+				   strerror (errno));
+		fh_server_close_conn (server, conn);
+		return false;
+	}
+
+	if (!conn->last_proc_cur->chain)
+		conn->last_proc_cur->chain = conn->chain_list->head;
+
+	for (struct fh_hook_cb *cb = server->hook_list->heads[FH_HOOK_STREAM_READ];
+		 cb; cb = cb->next)
+	{
+		if (cb->module_id >= server->module_count)
+			continue;
+
+		fh_hook_stream_read_cb_t final_cb
+			= (fh_hook_stream_read_cb_t) cb->cb_ptr;
+		bool ret = final_cb (server->modules[cb->module_id]->public_module,
+							 conn, conn->last_proc_cur);
+
+		if (!ret)
+			fh_pr_err ("Module '%s' STREAM_READ hook failed",
+					   server->modules[cb->module_id]->public_module->name);
+	}
+
+	conn->last_proc_cur->chain = conn->chain_list->tail;
+	conn->last_proc_cur->off = conn->chain_list->tail->buf->mem_size;
+
+	/* fh_server_close_conn (server, conn); */
 	return true;
 }
 
 static bool
 fh_server_on_write (struct fh_server *server, struct fh_conn *conn)
 {
+	if (!unlikely (server->hook_list->heads[FH_HOOK_STREAM_WRITE]))
+	{
+		fh_pr_err (
+			"No STREAM_WRITE hook was registered. Please ensure all required "
+			"protocol modules are correctly installed and loaded.");
+		fh_server_close_conn (server, conn);
+		return false;
+	}
+
 	fh_server_close_conn (server, conn);
 	return true;
 }
@@ -696,7 +771,6 @@ fh_server_wait (struct fh_server *server, bool *should_terminate)
 				{
 					fh_pr_err ("read event handler failed: %s",
 							   strerror (errno));
-					fh_server_close_conn (server, conn);
 				}
 			}
 			else if (kind & XPOLL_OUT)
@@ -707,7 +781,6 @@ fh_server_wait (struct fh_server *server, bool *should_terminate)
 				{
 					fh_pr_err ("write event handler failed: %s",
 							   strerror (errno));
-					fh_server_close_conn (server, conn);
 				}
 			}
 		}

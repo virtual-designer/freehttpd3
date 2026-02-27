@@ -17,10 +17,11 @@
  * along with OSN freehttpd.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <sys/cdefs.h>
 #define FH_LOG_MODULE_NAME "mod_http1x"
 
-#include <inttypes.h>
 #include <assert.h>
+#include <inttypes.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -135,7 +136,7 @@ mod_http1x_ctx_free (struct mod_http1x_ctx *ctx)
 	fh_pool_free (ctx->pool);
 }
 
-static bool
+static bool __attribute_maybe_unused__
 mod_http1x_parse (struct mod_http1x_ctx *ctx)
 {
 	for (;;)
@@ -171,7 +172,31 @@ mod_http1x_conn_probe (struct fh_module *module, struct fh_conn *conn)
 static bool
 mod_http1x_conn_cleanup (struct fh_module *module, struct fh_conn *conn)
 {
+	(void) module;
 	fh_pr_info ("Closing connection: %" PRIu64, conn->id);
+	return true;
+}
+
+static bool
+mod_http1x_stream_read (struct fh_module *module, struct fh_conn *conn,
+						struct fh_chain_cur *last_cur)
+{
+	(void) module;
+	(void) conn;
+
+	for (struct fh_chain *chain = last_cur->chain; chain; chain = chain->next)
+	{
+		size_t off = last_cur->chain == chain ? last_cur->off : 0;
+
+		if (off >= chain->buf->mem_size)
+			continue;
+
+		fh_pr_debug ("Buffer %p: (%zu)|%.*s|", (void *) chain->buf->mem_ptr,
+					 chain->buf->mem_size - off,
+					 (int) (chain->buf->mem_size - off),
+					 (char *) (chain->buf->mem_ptr + off));
+	}
+
 	return true;
 }
 
@@ -182,6 +207,8 @@ mod_http1x_init (struct fh_module *module)
 							 FH_HOOK_CB (&mod_http1x_conn_probe));
 	fh_module_register_hook (module, FH_HOOK_CONN_CLEANUP,
 							 FH_HOOK_CB (&mod_http1x_conn_cleanup));
+	fh_module_register_hook (module, FH_HOOK_STREAM_READ,
+							 FH_HOOK_CB (&mod_http1x_stream_read));
 
 	fh_pr_info ("Initialized");
 	return true;

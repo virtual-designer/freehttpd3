@@ -111,10 +111,7 @@ fh_pool_create_child (struct fh_pool *parent, size_t initial_capacity)
 		return NULL;
 
 	if (!fh_pool_init (pool, initial_capacity))
-	{
-		free (pool);
 		return NULL;
-	}
 
 	struct fh_pool_child *child = (struct fh_pool_child *) (pool + 1);
 

@@ -61,6 +61,9 @@ fh_conn_create (const struct fh_server *server, fd_t client_fd,
 
 	conn->id = conn_id++;
 	conn->pool = pool;
+	conn->chain_pool = NULL;
+	conn->chain_list = NULL;
+	conn->last_proc_cur = NULL;
 	conn->sockfd = client_fd;
 	conn->module_data = (struct fh_conn_module_data *) (((uint8_t *) (conn + 1))
 														+ client_addr_size);
@@ -108,6 +111,10 @@ fh_conn_destroy (struct fh_conn *conn)
 	}
 
 	close (conn->sockfd);
+
+	if (conn->chain_pool)
+		fh_pool_free (conn->chain_pool);
+
 	fh_pool_free (conn->pool);
 }
 
@@ -134,17 +141,12 @@ fh_conn_set_module_data (struct fh_module *module, struct fh_conn *conn,
 
 	if (module_data->cleanup_cb && !conn->module_data_initialized[module->id])
 	{
-		if (!conn->module_data_tail)
-		{
-			conn->module_data_tail = module_data;
-			module_data->prev = NULL;
-		}
-		else
-		{
+		if (conn->module_data_tail)
 			module_data->prev = conn->module_data_tail;
-			conn->module_data_tail = module_data;
-		}
+		else
+			module_data->prev = NULL;
 
+		conn->module_data_tail = module_data;
 		conn->module_data_initialized[module->id] = true;
 	}
 
