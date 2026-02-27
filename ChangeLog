@@ -1,3 +1,30 @@
+27-02-2026  Ar Rakin <rakinar2@osndevs.org>
+
+     [*] feat: chain reading from TCP streams
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+     [*] feat: prepare module private data support
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+     [*] merge: branch 'main' of github.com:virtual-designer/freehttpd3
+         
+
+     [*] feat: dynamic module hooks
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+24-02-2026  Conventional Release Action <rakinar2@onesoftnet.eu.org>
+
+     [*] release: v3.12.0 [skip ci]
+         
+         Signed-off-by: Conventional Release Action <rakinar2@onesoftnet.eu.org>
+         
+
 24-02-2026  Ar Rakin <rakinar2@osndevs.org>
 
      [*] build: fix tests failing on darwin
