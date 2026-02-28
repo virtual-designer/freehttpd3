@@ -17,7 +17,6 @@
  * along with OSN freehttpd.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <sys/cdefs.h>
 #define FH_LOG_MODULE_NAME "mod_http1x"
 
 #include <assert.h>
@@ -136,7 +135,7 @@ mod_http1x_ctx_free (struct mod_http1x_ctx *ctx)
 	fh_pool_free (ctx->pool);
 }
 
-static bool __attribute_maybe_unused__
+__attribute__((unused)) static bool
 mod_http1x_parse (struct mod_http1x_ctx *ctx)
 {
 	for (;;)
