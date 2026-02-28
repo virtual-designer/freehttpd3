@@ -1,3 +1,17 @@
+28-02-2026  Ar Rakin <rakinar2@osndevs.org>
+
+     [*] fix: use attributes directly
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+27-02-2026  Conventional Release Action <rakinar2@onesoftnet.eu.org>
+
+     [*] release: v3.15.0 [skip ci]
+         
+         Signed-off-by: Conventional Release Action <rakinar2@onesoftnet.eu.org>
+         
+
 27-02-2026  Ar Rakin <rakinar2@osndevs.org>
 
      [*] feat: chain reading from TCP streams
