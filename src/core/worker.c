@@ -20,6 +20,7 @@
 #define FH_LOG_MODULE_NAME "worker"
 
 #include <signal.h>
+#include <string.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -32,11 +33,13 @@
 #include "core/server.h"
 
 static bool should_terminate = false;
+static int last_signum = -1;
 
 static void
-handle_exit_signal (int signum __attribute__ ((unused)))
+handle_exit_signal (int signum)
 {
 	should_terminate = true;
+    last_signum = signum;
 }
 
 static void
@@ -61,6 +64,7 @@ fh_worker_start (struct fh_server *server)
 	fh_pr_info ("Ready for connections");
 
 	fh_server_wait (server, &should_terminate);
+    fh_pr_warn ("Signal: %s", strsignal (last_signum));
 	fh_worker_terminate (server);
 	exit (should_terminate ? EXIT_SUCCESS : EXIT_FAILURE);
 }

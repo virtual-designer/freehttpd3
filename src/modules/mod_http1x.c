@@ -36,192 +36,200 @@
 
 enum mod_http1x_state
 {
-	H1_STATE_METHOD,
-	H1_STATE_URI,
-	H1_STATE_VERSION,
-	H1_STATE_SPACE,
-	H1_STATE_HEADER_NAME,
-	H1_STATE_HEADER_VALUE,
-	H1_STATE_BODY,
+    H1_STATE_METHOD,
+    H1_STATE_URI,
+    H1_STATE_VERSION,
+    H1_STATE_SPACE,
+    H1_STATE_HEADER_NAME,
+    H1_STATE_HEADER_VALUE,
+    H1_STATE_BODY,
 };
 
 enum mod_http1x_err
 {
-	H1_ERR_NONE,
-	H1_ERR_MEMORY,
-	H1_ERR_PROTOCOL,
-	H1_ERR_MALFORMED,
+    H1_ERR_NONE,
+    H1_ERR_MEMORY,
+    H1_ERR_PROTOCOL,
+    H1_ERR_MALFORMED,
 };
 
 enum mod_http1x_method
 {
-	HTTP_GET,
-	HTTP_POST,
+    HTTP_GET,
+    HTTP_POST,
 };
 
 struct mod_http1x_result
 {
-	enum mod_http1x_method method;
-	char *uri;
-	size_t uri_len;
+    enum mod_http1x_method method;
+    char *uri;
+    size_t uri_len;
 };
 
 struct mod_http1x_ctx
 {
-	struct fh_pool *pool;
-	bool pool_freeable;
-	enum mod_http1x_state state;
-	enum mod_http1x_err error;
-	struct fh_chain_cur cur_processed, cur_seen;
-	struct mod_http1x_result result;
+    struct fh_pool *pool;
+    bool pool_freeable;
+    enum mod_http1x_state state;
+    enum mod_http1x_err error;
+    struct fh_chain_cur cur_processed, cur_seen;
+    struct mod_http1x_result result;
 };
 
 static bool
 mod_http1x_ctx_init (struct mod_http1x_ctx *ctx, struct fh_chain *start_chain,
-					 size_t start_off, struct fh_pool *pool)
+                     size_t start_off, struct fh_pool *pool)
 {
-	if (!pool)
-	{
-		ctx->pool_freeable = true;
-		pool = fh_pool_create (4096);
-	}
-	else
-	{
-		ctx->pool_freeable = false;
-	}
+    if (!pool)
+    {
+        ctx->pool_freeable = true;
+        pool = fh_pool_create (4096);
+    }
+    else
+    {
+        ctx->pool_freeable = false;
+    }
 
-	if (!pool)
-		return false;
+    if (!pool)
+        return false;
 
-	ctx->pool = pool;
-	ctx->cur_seen.chain = ctx->cur_processed.chain = start_chain;
-	ctx->cur_seen.off = ctx->cur_processed.off = start_off;
-	ctx->state = H1_STATE_METHOD;
-	ctx->error = H1_ERR_NONE;
+    ctx->pool = pool;
+    ctx->cur_seen.chain = ctx->cur_processed.chain = start_chain;
+    ctx->cur_seen.off = ctx->cur_processed.off = start_off;
+    ctx->state = H1_STATE_METHOD;
+    ctx->error = H1_ERR_NONE;
 
-	return true;
+    return true;
 }
 
 static struct mod_http1x_ctx *
 mod_http1x_ctx_create (struct fh_chain *start_chain, size_t start_off)
 {
-	struct fh_pool *pool = fh_pool_create (4096);
+    struct fh_pool *pool = fh_pool_create (4096);
 
-	if (!pool)
-		return NULL;
+    if (!pool)
+        return NULL;
 
-	struct mod_http1x_ctx *ctx = fh_pool_alloc (pool, sizeof (*ctx));
+    struct mod_http1x_ctx *ctx = fh_pool_alloc (pool, sizeof (*ctx));
 
-	if (!ctx || !mod_http1x_ctx_init (ctx, start_chain, start_off, pool))
-	{
-		fh_pool_free (pool);
-		return NULL;
-	}
+    if (!ctx || !mod_http1x_ctx_init (ctx, start_chain, start_off, pool))
+    {
+        fh_pool_free (pool);
+        return NULL;
+    }
 
-	return ctx;
+    return ctx;
 }
 
 static void
 mod_http1x_ctx_cleanup (const struct mod_http1x_ctx *ctx)
 {
-	if (ctx->pool_freeable)
-		fh_pool_free (ctx->pool);
+    if (ctx->pool_freeable)
+        fh_pool_free (ctx->pool);
 }
 
 static void
 mod_http1x_ctx_free (struct mod_http1x_ctx *ctx)
 {
-	mod_http1x_ctx_cleanup (ctx);
-	fh_pool_free (ctx->pool);
+    mod_http1x_ctx_cleanup (ctx);
+    fh_pool_free (ctx->pool);
 }
 
-__attribute__((unused)) static bool
+__attribute__ ((unused)) static bool
 mod_http1x_parse (struct mod_http1x_ctx *ctx)
 {
-	for (;;)
-	{
-		switch (ctx->state)
-		{
-			case H1_STATE_METHOD:
-				ctx->state = H1_STATE_SPACE;
-				break;
+    for (;;)
+    {
+        switch (ctx->state)
+        {
+            case H1_STATE_METHOD:
+                ctx->state = H1_STATE_SPACE;
+                break;
 
-			default:
-				fh_pr_debug ("Invalid state: %i", ctx->state);
-				return false;
-		}
-	}
+            default:
+                fh_pr_debug ("Invalid state: %i", ctx->state);
+                return false;
+        }
+    }
 }
 
 static bool
 mod_http1x_conn_probe (struct fh_module *module, struct fh_conn *conn)
 {
-	struct mod_http1x_ctx *ctx = mod_http1x_ctx_create (NULL, 0);
+    struct mod_http1x_ctx *ctx = mod_http1x_ctx_create (NULL, 0);
 
-	if (!ctx)
-		return false;
+    if (!ctx)
+        return false;
 
-	fh_conn_set_module_data (module, conn, ctx,
-							 (void (*) (void *)) &mod_http1x_ctx_free);
+    ctx->state = H1_STATE_URI;
+    fh_conn_set_module_data (module, conn, ctx,
+                             (void (*) (void *)) &mod_http1x_ctx_free);
 
-	fh_pr_info ("New connection: %" PRIu64, conn->id);
-	return true;
+    fh_pr_info ("New connection: %" PRIu64, conn->id);
+    return true;
 }
 
 static bool
 mod_http1x_conn_cleanup (struct fh_module *module, struct fh_conn *conn)
 {
-	(void) module;
-	fh_pr_info ("Closing connection: %" PRIu64, conn->id);
-	return true;
+    (void) module;
+    fh_pr_info ("Closing connection: %" PRIu64, conn->id);
+    return true;
 }
 
 static bool
 mod_http1x_stream_read (struct fh_module *module, struct fh_conn *conn,
-						struct fh_chain_cur *last_cur)
+                        struct fh_chain_cur *last_cur)
 {
-	(void) module;
-	(void) conn;
+    (void) module;
+    (void) conn;
 
-	for (struct fh_chain *chain = last_cur->chain; chain; chain = chain->next)
-	{
-		size_t off = last_cur->chain == chain ? last_cur->off : 0;
+    struct mod_http1x_ctx *ctx = fh_conn_get_module_data (module, conn);
 
-		if (off >= chain->buf->mem_size)
-			continue;
+    if (!ctx)
+        return false;
 
-		fh_pr_debug ("Buffer %p: (%zu)|%.*s|", (void *) chain->buf->mem_ptr,
-					 chain->buf->mem_size - off,
-					 (int) (chain->buf->mem_size - off),
-					 (char *) (chain->buf->mem_ptr + off));
-	}
+    fh_pr_debug ("State: %d", ctx->state);
 
-	return true;
+    for (struct fh_chain *chain = last_cur->chain; chain; chain = chain->next)
+    {
+        size_t off = last_cur->chain == chain ? last_cur->off : 0;
+
+        if (off >= chain->buf->mem_size)
+            continue;
+
+        fh_pr_debug ("Buffer %p: (%zu)|%.*s|", (void *) chain->buf->mem_ptr,
+                     chain->buf->mem_size - off,
+                     (int) (chain->buf->mem_size - off),
+                     (char *) (chain->buf->mem_ptr + off));
+    }
+
+    return true;
 }
 
 static bool
 mod_http1x_init (struct fh_module *module)
 {
-	fh_module_register_hook (module, FH_HOOK_CONN_PROBE,
-							 FH_HOOK_CB (&mod_http1x_conn_probe));
-	fh_module_register_hook (module, FH_HOOK_CONN_CLEANUP,
-							 FH_HOOK_CB (&mod_http1x_conn_cleanup));
-	fh_module_register_hook (module, FH_HOOK_STREAM_READ,
-							 FH_HOOK_CB (&mod_http1x_stream_read));
+    fh_module_register_hook (module, FH_HOOK_CONN_PROBE,
+                             FH_HOOK_CB (&mod_http1x_conn_probe));
+    fh_module_register_hook (module, FH_HOOK_CONN_CLEANUP,
+                             FH_HOOK_CB (&mod_http1x_conn_cleanup));
+    fh_module_register_hook (module, FH_HOOK_STREAM_READ,
+                             FH_HOOK_CB (&mod_http1x_stream_read));
 
-	fh_pr_info ("Initialized");
-	return true;
+    fh_pr_info ("Initialized");
+    return true;
 }
 
 static void
 mod_http1x_exit (struct fh_module *module)
 {
-	(void) module;
-	fh_pr_info ("De-initialized");
+    (void) module;
+    fh_pr_info ("De-initialized");
 }
 
 const fh_modinfo_t fh_modinfo = {
-	.abi_version = FH_MODULE_ABI_VERSION,
-	.init_cb = &mod_http1x_init,
-	.exit_cb = &mod_http1x_exit,
+    .abi_version = FH_MODULE_ABI_VERSION,
+    .init_cb = &mod_http1x_init,
+    .exit_cb = &mod_http1x_exit,
 };

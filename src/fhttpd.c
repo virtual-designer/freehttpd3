@@ -17,7 +17,6 @@
  * along with OSN freehttpd.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <stdint.h>
 #define FH_LOG_MODULE_NAME "main"
 
 #include <errno.h>
@@ -26,6 +25,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdint.h>
 
 #include "core/config.h"
 #include "core/server.h"

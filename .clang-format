@@ -1,7 +1,8 @@
-SpaceAfterCStyleCast: true
+BasedOnStyle: GNU
 IndentWidth: 4
-UseTab: Always
 TabWidth: 4
+UseTab: Never
+ColumnLimit: 80
 BreakBeforeBraces: Allman
 IndentCaseLabels: true
 AllowShortBlocksOnASingleLine: false
@@ -9,10 +10,9 @@ AllowShortCaseLabelsOnASingleLine: false
 AllowShortFunctionsOnASingleLine: None
 AllowShortIfStatementsOnASingleLine: false
 AllowShortLoopsOnASingleLine: false
-ColumnLimit: 80
 SortIncludes: true
-BasedOnStyle: GNU
 IndentGotoLabels: true
 IndentCaseBlocks: true
 InsertNewlineAtEOF: true
 IndentPPDirectives: AfterHash
+SpaceAfterCStyleCast: true
