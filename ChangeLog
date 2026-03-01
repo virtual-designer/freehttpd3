@@ -1,3 +1,17 @@
+01-03-2026  Ar Rakin <rakinar2@osndevs.org>
+
+     [*] fix: move strsignal() calls out of signal handlers
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+28-02-2026  Conventional Release Action <rakinar2@onesoftnet.eu.org>
+
+     [*] release: v3.15.1 [skip ci]
+         
+         Signed-off-by: Conventional Release Action <rakinar2@onesoftnet.eu.org>
+         
+
 28-02-2026  Ar Rakin <rakinar2@osndevs.org>
 
      [*] fix: use attributes directly
