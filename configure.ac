@@ -146,10 +146,10 @@ AC_CHECK_LIB([dl], [dlopen], [have_libdl=yes], [
 ])
 
 # Define macros
-AC_MSG_CHECKING([for effective shared library extension])
+AC_MSG_CHECKING([for effective module library extension])
 
 case "$target" in
-	*darwin*) shared_library_ext="dylib" ;;
+	*darwin*) shared_library_ext="so" ;;
 	*cygwin*|*mingw*) shared_library_ext="dll" ;;
 	*) shared_library_ext="so" ;;
 esac

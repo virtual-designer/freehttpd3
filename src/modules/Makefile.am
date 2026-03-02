@@ -18,7 +18,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with OSN freehttpd.  If not, see <https://www.gnu.org/licenses/>.
 
-COMMON_MODULE_CFLAGS = -module -avoid-version -shared
+COMMON_MODULE_CFLAGS = -module -avoid-version -shared -export-dynamic
 
 moduledir = $(FHTTPD_MODULE_PATH)
 module_LTLIBRARIES =
