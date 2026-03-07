@@ -318,11 +318,11 @@ mod_http1x_parse (struct mod_http1x_ctx *ctx, struct fh_conn *conn)
                 break;
 
             case H1_STATE_DONE:
-                fh_pr_debug ("Already done parsing");
+                fh_log_debug ("Already done parsing");
                 return true;
 
             default:
-                fh_pr_debug ("Invalid state: %i", ctx->state);
+                fh_log_debug ("Invalid state: %i", ctx->state);
                 return false;
         }
 
@@ -333,24 +333,24 @@ mod_http1x_parse (struct mod_http1x_ctx *ctx, struct fh_conn *conn)
                 continue;
 
             case 1:
-                fh_pr_debug ("Parse error: %i", ret & 0xFFFF);
+                fh_log_debug ("Parse error: %i", ret & 0xFFFF);
                 return false;
 
             case 2:
-                fh_pr_debug ("Need more data");
+                fh_log_debug ("Need more data");
                 return true;
 
             case 3:
-                fh_pr_debug ("HTTP request info:");
-                fh_pr_debug ("Method: %i", ctx->result.method);
-                fh_pr_debug ("URI: (%zu) |%.*s|", ctx->result.uri_len,
+                fh_log_debug ("HTTP request info:");
+                fh_log_debug ("Method: %i", ctx->result.method);
+                fh_log_debug ("URI: (%zu) |%.*s|", ctx->result.uri_len,
                              (int) ctx->result.uri_len, ctx->result.uri);
-                fh_pr_debug ("Version: %i", ctx->result.version);
+                fh_log_debug ("Version: %i", ctx->result.version);
                 ctx->state = H1_STATE_DONE;
                 return true;
 
             default:
-                fh_pr_debug ("Invalid return code: %i", ret >> 16U);
+                fh_log_debug ("Invalid return code: %i", ret >> 16U);
                 return false;
         }
     }
@@ -368,7 +368,7 @@ mod_http1x_conn_probe (struct fh_module *module, struct fh_conn *conn)
     fh_conn_set_module_data (module, conn, ctx,
                              (void (*) (void *)) &mod_http1x_ctx_free);
 
-    fh_pr_info ("New connection: %" PRIu64, conn->id);
+    fh_log_info ("New connection: %" PRIu64, conn->id);
     return true;
 }
 
@@ -376,7 +376,7 @@ static bool
 mod_http1x_conn_cleanup (struct fh_module *module, struct fh_conn *conn)
 {
     (void) module;
-    fh_pr_info ("Closing connection: %" PRIu64, conn->id);
+    fh_log_info ("Closing connection: %" PRIu64, conn->id);
     return true;
 }
 
@@ -391,11 +391,11 @@ mod_http1x_stream_read (struct fh_module *module, struct fh_conn *conn,
     if (!ctx)
         return false;
 
-    fh_pr_debug ("State: %d", ctx->state);
+    fh_log_debug ("State: %d", ctx->state);
 
     if (!mod_http1x_parse (ctx, conn))
     {
-        fh_pr_err ("Parser error, closing connection");
+        fh_log_err ("Parser error, closing connection");
         fh_conn_close_from_module (conn);
         return false;
     }
@@ -413,7 +413,7 @@ mod_http1x_init (struct fh_module *module)
     fh_module_register_hook (module, FH_HOOK_STREAM_READ,
                              FH_HOOK_CB (&mod_http1x_stream_read));
 
-    fh_pr_info ("Initialized");
+    fh_log_info ("Initialized");
     return true;
 }
 
@@ -421,7 +421,7 @@ static void
 mod_http1x_exit (struct fh_module *module)
 {
     (void) module;
-    fh_pr_info ("De-initialized");
+    fh_log_info ("De-initialized");
 }
 
 const fh_modinfo_t fh_modinfo = {

@@ -57,10 +57,10 @@ void fh_log_set_worker_pid (pid_t pid);
 
 /* Macro helpers for logging in different levels. */
 
-#define fh_pr_debug(...) fh_printl (PR_DEBUG _FH_LOG_MODULE __VA_ARGS__)
-#define fh_pr_info(...) fh_printl (PR_INFO _FH_LOG_MODULE __VA_ARGS__)
-#define fh_pr_warn(...) fh_printl (PR_WARN _FH_LOG_MODULE __VA_ARGS__)
-#define fh_pr_err(...) fh_printl (PR_ERR _FH_LOG_MODULE __VA_ARGS__)
-#define fh_pr_emerg(...) fh_printl (PR_EMERG _FH_LOG_MODULE __VA_ARGS__)
+#define fh_log_debug(...) fh_printl (PR_DEBUG _FH_LOG_MODULE __VA_ARGS__)
+#define fh_log_info(...) fh_printl (PR_INFO _FH_LOG_MODULE __VA_ARGS__)
+#define fh_log_warn(...) fh_printl (PR_WARN _FH_LOG_MODULE __VA_ARGS__)
+#define fh_log_err(...) fh_printl (PR_ERR _FH_LOG_MODULE __VA_ARGS__)
+#define fh_log_emerg(...) fh_printl (PR_EMERG _FH_LOG_MODULE __VA_ARGS__)
 
 #endif /* FH_LOG_LOG_H */

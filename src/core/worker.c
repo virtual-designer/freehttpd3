@@ -61,10 +61,10 @@ fh_worker_start (struct fh_server *server)
 		|| sigaction (SIGTERM, &act, NULL) < 0)
 		_exit (EXIT_FAILURE);
 
-	fh_pr_info ("Ready for connections");
+	fh_log_info ("Ready for connections");
 
 	fh_server_wait (server, &should_terminate);
-    fh_pr_warn ("Signal: %s", strsignal (last_signum));
+    fh_log_warn ("Signal: %s", strsignal (last_signum));
 	fh_worker_terminate (server);
 	exit (should_terminate ? EXIT_SUCCESS : EXIT_FAILURE);
 }

@@ -60,22 +60,22 @@ main (void)
 	config->hosts->ports[3] = 8443;
 	config->hosts->port_count = 4;
 
-	fh_pr_info ("Starting server");
+	fh_log_info ("Starting server");
 	struct fh_server *server = fh_server_create (config);
 
 	if (!server)
 	{
-		fh_pr_err ("fh_server_create: %s", strerror (errno));
+		fh_log_err ("fh_server_create: %s", strerror (errno));
 		exit (EXIT_FAILURE);
 	}
 
 	if (!fh_server_start (server))
 	{
-		fh_pr_err ("fh_server_start: %s", strerror (errno));
+		fh_log_err ("fh_server_start: %s", strerror (errno));
 		exit (EXIT_FAILURE);
 	}
 
-	fh_pr_info ("Server terminated");
+	fh_log_info ("Server terminated");
 	fh_server_destroy (server);
 	return EXIT_SUCCESS;
 }

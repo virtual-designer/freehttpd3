@@ -108,7 +108,7 @@ fh_server_destroy (struct fh_server *server)
         fh_conn_destroy (conn->data);
     }
 
-    fh_pr_info ("Closed %" PRIu64 " sockets and %" PRIu64 " connections",
+    fh_log_info ("Closed %" PRIu64 " sockets and %" PRIu64 " connections",
                 server->sockfd_table->count, server->conn_table->count);
     itable_destroy (server->conn_table);
     itable_destroy (server->sockfd_table);
@@ -124,7 +124,7 @@ fh_server_destroy (struct fh_server *server)
     {
         for (size_t i = 0; i < server->worker_count; i++)
         {
-            fh_pr_info ("Killing worker process: %zu [%d]", i,
+            fh_log_info ("Killing worker process: %zu [%d]", i,
                         server->workers[i]);
             kill (server->workers[i], SIGTERM);
         }
@@ -192,14 +192,14 @@ fh_server_load_modules (struct fh_server *server, char *module_dir)
                         sizeof (SHARED_LIBRARY_EXTENSION)))
             continue;
 
-        fh_pr_info ("Loading module: %s", ent->fts_path);
+        fh_log_info ("Loading module: %s", ent->fts_path);
 
         struct fh_module_handle *handle
             = fh_module_handle_load (server, ent->fts_path);
 
         if (!handle || handle->err)
         {
-            fh_pr_err ("Error loading module: %s: %s", ent->fts_path,
+            fh_log_err ("Error loading module: %s: %s", ent->fts_path,
                        fh_module_handle_get_last_err (handle));
 
             if (handle)
@@ -210,7 +210,7 @@ fh_server_load_modules (struct fh_server *server, char *module_dir)
 
         if (!fh_server_register_module (server, handle))
         {
-            fh_pr_err ("Unable to register module: %s: %s", ent->fts_path,
+            fh_log_err ("Unable to register module: %s: %s", ent->fts_path,
                        strerror (errno));
             fh_module_handle_cleanup (handle, false);
         }
@@ -334,7 +334,7 @@ fh_server_create_sockets (struct fh_server *server)
                 return false;
             }
 
-            fh_pr_info ("Creating socket for port: %i [IPv4]", port);
+            fh_log_info ("Creating socket for port: %i [IPv4]", port);
             fd_t sockfd = fh_server_create_socket (server, AF_INET, port);
 
             if (sockfd < 0)
@@ -368,12 +368,12 @@ fh_server_create_sockets (struct fh_server *server)
 static bool
 fh_server_fork_workers (struct fh_server *server)
 {
-    fh_pr_info ("Spawning %zu workers", server->config->worker_count);
+    fh_log_info ("Spawning %zu workers", server->config->worker_count);
     server->workers = calloc (server->config->worker_count, sizeof (pid_t));
 
     if (!server->workers)
     {
-        fh_pr_info ("Memory allocation error: %s", strerror (errno));
+        fh_log_info ("Memory allocation error: %s", strerror (errno));
         return false;
     }
 
@@ -383,7 +383,7 @@ fh_server_fork_workers (struct fh_server *server)
 
         if (pid < 0)
         {
-            fh_pr_info ("Failed to spawn worker #%zu: %s", i, strerror (errno));
+            fh_log_info ("Failed to spawn worker #%zu: %s", i, strerror (errno));
             return false;
         }
 
@@ -412,7 +412,7 @@ fh_server_fork_workers (struct fh_server *server)
         }
 
         server->workers[server->worker_count++] = pid;
-        fh_pr_info ("Spawned worker #%zu [%d]", i, pid);
+        fh_log_info ("Spawned worker #%zu [%d]", i, pid);
     }
 
     return true;
@@ -458,7 +458,7 @@ fh_server_start (struct fh_server *server)
 
             if (should_terminate)
             {
-                fh_pr_warn ("Signal: %s", strsignal (last_signum));
+                fh_log_warn ("Signal: %s", strsignal (last_signum));
                 return true;
             }
         }
@@ -500,7 +500,7 @@ fh_server_add_conn (struct fh_server *server, fd_t client_fd,
             = final_cb (server->modules[cb->module_id]->public_module, conn);
 
         if (!ret)
-            fh_pr_err ("Module '%s' CONN_PROBE hook failed",
+            fh_log_err ("Module '%s' CONN_PROBE hook failed",
                        server->modules[cb->module_id]->public_module->name);
     }
 
@@ -510,7 +510,7 @@ fh_server_add_conn (struct fh_server *server, fd_t client_fd,
 bool
 fh_server_close_conn (struct fh_server *server, struct fh_conn *conn)
 {
-    fh_pr_debug ("Closing connection: %zu", conn->id);
+    fh_log_debug ("Closing connection: %zu", conn->id);
     xpoll_unregister_fd (server->xpoll, conn->sockfd, XPOLL_IN | XPOLL_OUT);
     itable_remove (server->conn_table, (uint64_t) conn->sockfd);
 
@@ -526,7 +526,7 @@ fh_server_close_conn (struct fh_server *server, struct fh_conn *conn)
             = final_cb (server->modules[cb->module_id]->public_module, conn);
 
         if (!ret)
-            fh_pr_err ("Module '%s' CONN_CLEANUP hook failed",
+            fh_log_err ("Module '%s' CONN_CLEANUP hook failed",
                        server->modules[cb->module_id]->public_module->name);
     }
 
@@ -572,7 +572,7 @@ fh_server_accept (struct fh_server *server, fd_t server_fd,
             if (ERR_WOULD_BLOCK)
                 break;
 
-            fh_pr_err ("Unable to accept connection via socket %d [IPv%d]: %s",
+            fh_log_err ("Unable to accept connection via socket %d [IPv%d]: %s",
                        server_fd, info->family == AF_INET6 ? 6 : 4,
                        strerror (errno));
 
@@ -611,13 +611,13 @@ fh_server_accept (struct fh_server *server, fd_t server_fd,
             = ntohs (is_ip6 ? ((struct sockaddr_in6 *) &client_addr)->sin6_port
                             : ((struct sockaddr_in *) &client_addr)->sin_port);
 
-        fh_pr_info ("Accepted connection: server_fd=%d, client_fd=%d, "
+        fh_log_info ("Accepted connection: server_fd=%d, client_fd=%d, "
                     "client_addr=%s:%d",
                     server_fd, client_fd, ip, port);
 
         if (!fh_server_add_conn (server, client_fd, &client_addr))
         {
-            fh_pr_err ("Failed to add connection: %s", strerror (errno));
+            fh_log_err ("Failed to add connection: %s", strerror (errno));
             close (client_fd);
             continue;
         }
@@ -631,7 +631,7 @@ fh_server_on_read (struct fh_server *server, struct fh_conn *conn)
 {
     if (unlikely (!server->hook_list->heads[FH_HOOK_STREAM_READ]))
     {
-        fh_pr_err (
+        fh_log_err (
             "No STREAM_READ hook was registered. Please ensure all required "
             "protocol modules are correctly installed and loaded.");
         fh_server_close_conn (server, conn);
@@ -669,7 +669,7 @@ fh_server_on_read (struct fh_server *server, struct fh_conn *conn)
     if (!fh_chain_read (conn->chain_pool, conn->sockfd, &conn->chain_list->head,
                         &conn->chain_list->tail))
     {
-        fh_pr_err ("Connection %" PRIu64 ": Read error: %s", conn->id,
+        fh_log_err ("Connection %" PRIu64 ": Read error: %s", conn->id,
                    strerror (errno));
         fh_server_close_conn (server, conn);
         return false;
@@ -681,7 +681,7 @@ fh_server_on_read (struct fh_server *server, struct fh_conn *conn)
     if (old != conn->chain_list->tail
         || (conn->chain_list->tail && old
             && conn->chain_list->tail->buf->mem_size != old->buf->mem_size))
-        fh_pr_debug ("Read new chains");
+        fh_log_debug ("Read new chains");
 
     for (struct fh_hook_cb *cb = server->hook_list->heads[FH_HOOK_STREAM_READ];
          cb; cb = cb->next)
@@ -689,7 +689,7 @@ fh_server_on_read (struct fh_server *server, struct fh_conn *conn)
         if (cb->module_id >= server->module_count)
             continue;
 
-        fh_pr_debug ("Module '%s' STREAM_READ hook running",
+        fh_log_debug ("Module '%s' STREAM_READ hook running",
                      server->modules[cb->module_id]->public_module->name);
 
         fh_hook_stream_read_cb_t final_cb
@@ -698,7 +698,7 @@ fh_server_on_read (struct fh_server *server, struct fh_conn *conn)
                              conn, conn->last_proc_cur);
 
         if (!ret)
-            fh_pr_err ("Module '%s' STREAM_READ hook failed",
+            fh_log_err ("Module '%s' STREAM_READ hook failed",
                        server->modules[cb->module_id]->public_module->name);
 
         if (conn->to_be_closed)
@@ -718,7 +718,7 @@ fh_server_on_write (struct fh_server *server, struct fh_conn *conn)
 {
     if (!unlikely (server->hook_list->heads[FH_HOOK_STREAM_WRITE]))
     {
-        fh_pr_err (
+        fh_log_err (
             "No STREAM_WRITE hook was registered. Please ensure all required "
             "protocol modules are correctly installed and loaded.");
         fh_server_close_conn (server, conn);
@@ -747,7 +747,7 @@ fh_server_wait (struct fh_server *server, bool *should_terminate)
             if (ERR_WOULD_INTERRUPT)
                 continue;
 
-            fh_pr_err ("xpoll_wait failed: %s", strerror (errno));
+            fh_log_err ("xpoll_wait failed: %s", strerror (errno));
             continue;
         }
 
@@ -761,7 +761,7 @@ fh_server_wait (struct fh_server *server, bool *should_terminate)
             if (info && kind & XPOLL_IN)
             {
                 if (!fh_server_accept (server, fd, info))
-                    fh_pr_err ("accept failed: %s", strerror (errno));
+                    fh_log_err ("accept failed: %s", strerror (errno));
 
                 continue;
             }
@@ -777,7 +777,7 @@ fh_server_wait (struct fh_server *server, bool *should_terminate)
 
             if (XPOLL_EVENT_IS_ERR (&events[i]))
             {
-                fh_pr_err ("xpoll error: client_fd=%d, errno=%d, msg=\"%s\"",
+                fh_log_err ("xpoll error: client_fd=%d, errno=%d, msg=\"%s\"",
                            fd, errno, strerror (errno));
                 fh_server_close_conn (server, conn);
                 continue;
@@ -785,21 +785,21 @@ fh_server_wait (struct fh_server *server, bool *should_terminate)
 
             if (kind & XPOLL_IN)
             {
-                fh_pr_info ("xpoll read notification: client_fd=%d", fd);
+                fh_log_info ("xpoll read notification: client_fd=%d", fd);
 
                 if (!fh_server_on_read (server, conn))
                 {
-                    fh_pr_err ("read event handler failed: %s",
+                    fh_log_err ("read event handler failed: %s",
                                strerror (errno));
                 }
             }
             else if (kind & XPOLL_OUT)
             {
-                fh_pr_info ("xpoll write notification: client_fd=%d", fd);
+                fh_log_info ("xpoll write notification: client_fd=%d", fd);
 
                 if (!fh_server_on_write (server, conn))
                 {
-                    fh_pr_err ("write event handler failed: %s",
+                    fh_log_err ("write event handler failed: %s",
                                strerror (errno));
                 }
             }
