@@ -32,31 +32,32 @@
 
 struct sockfd_info
 {
-	int family;
+    int family;
 };
 
 struct fh_module_handle;
 
 struct fh_server
 {
-	struct xpoll *xpoll;
-	struct fh_config *config;
-	/* (fd_t) => (struct sockfd_info *) */
-	struct itable *sockfd_table;
-	/* (fd_t) => (struct fh_conn *) */
-	struct itable *conn_table;
-	struct fh_module_handle **modules;
-	size_t module_count;
-	struct fh_hook_list *hook_list;
-	pid_t *workers;
-	size_t worker_count;
-	size_t current_worker_index;
-	bool is_worker;
+    struct xpoll *xpoll;
+    struct fh_config *config;
+    /* (fd_t) => (struct sockfd_info *) */
+    struct itable *sockfd_table;
+    /* (fd_t) => (struct fh_conn *) */
+    struct itable *conn_table;
+    struct fh_module_handle **modules;
+    size_t module_count;
+    struct fh_hook_list *hook_list;
+    pid_t *workers;
+    size_t worker_count;
+    size_t current_worker_index;
+    bool is_worker;
 };
 
 struct fh_server *fh_server_create (struct fh_config *config);
 void fh_server_destroy (struct fh_server *server);
 bool fh_server_start (struct fh_server *server);
 bool fh_server_wait (struct fh_server *server, bool *should_terminate);
+bool fh_server_close_conn (struct fh_server *server, struct fh_conn *conn);
 
 #endif /* FHTTPD_SERVER_H */

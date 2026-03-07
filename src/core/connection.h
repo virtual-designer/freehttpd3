@@ -43,6 +43,7 @@ struct fh_conn
 	struct sockaddr_storage *client_addr;
 	fd_t sockfd;
 	uint16_t port;
+	bool to_be_closed;
 	struct fh_pool *pool;
 	struct fh_pool *chain_pool;
 	struct fh_conn_module_data *module_data;
@@ -59,5 +60,6 @@ void fh_conn_destroy (struct fh_conn *conn);
 void *fh_conn_get_module_data (struct fh_module *module, struct fh_conn *conn);
 bool fh_conn_set_module_data (struct fh_module *module, struct fh_conn *conn,
 							  void *data, void (*cleanup_cb) (void *));
+void fh_conn_close_from_module (struct fh_conn *conn);
 
 #endif /* FHTTPD_CONNECTION_H */

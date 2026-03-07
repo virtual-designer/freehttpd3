@@ -507,9 +507,10 @@ fh_server_add_conn (struct fh_server *server, fd_t client_fd,
     return true;
 }
 
-static bool
+bool
 fh_server_close_conn (struct fh_server *server, struct fh_conn *conn)
 {
+    fh_pr_debug ("Closing connection: %zu", conn->id);
     xpoll_unregister_fd (server->xpoll, conn->sockfd, XPOLL_IN | XPOLL_OUT);
     itable_remove (server->conn_table, (uint64_t) conn->sockfd);
 
@@ -628,7 +629,7 @@ fh_server_accept (struct fh_server *server, fd_t server_fd,
 static bool
 fh_server_on_read (struct fh_server *server, struct fh_conn *conn)
 {
-    if (!unlikely (server->hook_list->heads[FH_HOOK_STREAM_READ]))
+    if (unlikely (!server->hook_list->heads[FH_HOOK_STREAM_READ]))
     {
         fh_pr_err (
             "No STREAM_READ hook was registered. Please ensure all required "
@@ -663,6 +664,8 @@ fh_server_on_read (struct fh_server *server, struct fh_conn *conn)
         conn->last_proc_cur = (struct fh_chain_cur *) (conn->chain_list + 1);
     }
 
+    struct fh_chain *old = conn->chain_list->tail;
+
     if (!fh_chain_read (conn->chain_pool, conn->sockfd, &conn->chain_list->head,
                         &conn->chain_list->tail))
     {
@@ -675,11 +678,19 @@ fh_server_on_read (struct fh_server *server, struct fh_conn *conn)
     if (!conn->last_proc_cur->chain)
         conn->last_proc_cur->chain = conn->chain_list->head;
 
+    if (old != conn->chain_list->tail
+        || (conn->chain_list->tail && old
+            && conn->chain_list->tail->buf->mem_size != old->buf->mem_size))
+        fh_pr_debug ("Read new chains");
+
     for (struct fh_hook_cb *cb = server->hook_list->heads[FH_HOOK_STREAM_READ];
          cb; cb = cb->next)
     {
         if (cb->module_id >= server->module_count)
             continue;
+
+        fh_pr_debug ("Module '%s' STREAM_READ hook running",
+                     server->modules[cb->module_id]->public_module->name);
 
         fh_hook_stream_read_cb_t final_cb
             = (fh_hook_stream_read_cb_t) cb->cb_ptr;
@@ -689,12 +700,16 @@ fh_server_on_read (struct fh_server *server, struct fh_conn *conn)
         if (!ret)
             fh_pr_err ("Module '%s' STREAM_READ hook failed",
                        server->modules[cb->module_id]->public_module->name);
+
+        if (conn->to_be_closed)
+        {
+            fh_server_close_conn (server, conn);
+            return true;
+        }
     }
 
     conn->last_proc_cur->chain = conn->chain_list->tail;
     conn->last_proc_cur->off = conn->chain_list->tail->buf->mem_size;
-
-    /* fh_server_close_conn (server, conn); */
     return true;
 }
 

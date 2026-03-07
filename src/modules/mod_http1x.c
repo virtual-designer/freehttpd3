@@ -24,6 +24,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "core/connection.h"
 #include "core/hooks.h"
@@ -32,7 +33,9 @@
 #include "mm/chain.h"
 #include "mm/pool.h"
 
-#define mod_http1x_METHOD_MAX_LEN 8
+#define H1_METHOD_MAX_LEN 8
+#define H1_URI_MAX_LEN 4096
+#define H1_VERSION_MAX_LEN 8
 
 enum mod_http1x_state
 {
@@ -43,6 +46,7 @@ enum mod_http1x_state
     H1_STATE_HEADER_NAME,
     H1_STATE_HEADER_VALUE,
     H1_STATE_BODY,
+    H1_STATE_DONE
 };
 
 enum mod_http1x_err
@@ -51,6 +55,12 @@ enum mod_http1x_err
     H1_ERR_MEMORY,
     H1_ERR_PROTOCOL,
     H1_ERR_MALFORMED,
+};
+
+enum mod_http1x_version
+{
+    H1_VERSION_1_0,
+    H1_VERSION_1_1,
 };
 
 enum mod_http1x_method
@@ -64,12 +74,14 @@ struct mod_http1x_result
     enum mod_http1x_method method;
     char *uri;
     size_t uri_len;
+    enum mod_http1x_version version;
 };
 
 struct mod_http1x_ctx
 {
     struct fh_pool *pool;
     bool pool_freeable;
+    enum mod_http1x_state space_next_state;
     enum mod_http1x_state state;
     enum mod_http1x_err error;
     struct fh_chain_cur cur_processed, cur_seen;
@@ -135,19 +147,210 @@ mod_http1x_ctx_free (struct mod_http1x_ctx *ctx)
     fh_pool_free (ctx->pool);
 }
 
-__attribute__ ((unused)) static bool
-mod_http1x_parse (struct mod_http1x_ctx *ctx)
+#define H1_NEXT(state) (state & 0xFFFFU)
+#define H1_ERR(code) ((1U << 16U) | (code))
+#define H1_AGAIN (2U << 16U)
+#define H1_DONE (3U << 16U)
+
+static uint32_t
+mod_http1x_parse_method (struct mod_http1x_ctx *ctx, struct fh_conn *conn)
+{
+    (void) conn;
+
+    struct fh_chain_cur end_cur;
+
+    fh_chain_print (ctx->cur_processed.chain);
+
+    if (!fh_chain_find_char (&end_cur, &ctx->cur_processed, ' ',
+                             H1_METHOD_MAX_LEN))
+        return H1_AGAIN;
+
+    struct fh_chain_cpbuf cpbuf;
+
+    if (!fh_chain_copy_range (ctx->pool, &ctx->cur_processed, &end_cur,
+                              H1_METHOD_MAX_LEN, &cpbuf))
+        return H1_ERR (500);
+
+    enum mod_http1x_method method;
+
+    if (!strncmp ((const char *) cpbuf.raw_buf, "GET", cpbuf.len))
+        method = HTTP_GET;
+    else if (!strncmp ((const char *) cpbuf.raw_buf, "POST", cpbuf.len))
+        method = HTTP_POST;
+    else
+        return H1_ERR (405);
+
+    ctx->result.method = method;
+    ctx->cur_processed.chain = end_cur.chain;
+    ctx->cur_processed.off = end_cur.off;
+    ctx->space_next_state = H1_STATE_URI;
+
+    return H1_NEXT (H1_STATE_SPACE);
+}
+
+static uint32_t
+mod_http1x_parse_space (struct mod_http1x_ctx *ctx, struct fh_conn *conn)
+{
+    (void) conn;
+
+    struct fh_chain *chain = ctx->cur_processed.chain;
+    size_t start_off = ctx->cur_processed.off;
+
+    while (chain)
+    {
+        size_t off = ctx->cur_processed.chain == chain ? start_off : 0;
+        size_t len = 0;
+        const uint8_t *base = chain->buf->mem_ptr + off;
+
+        while (len + off < chain->buf->mem_size && base[len] == ' ')
+            len++;
+
+        if (!chain->next
+            || (len + off < chain->buf->mem_size && base[len] != ' '))
+        {
+            ctx->cur_processed.off += len;
+            ctx->cur_processed.chain = chain;
+
+            if (!(len + off < chain->buf->mem_size && base[len] != ' '))
+                return H1_AGAIN;
+
+            break;
+        }
+
+        chain = chain->next;
+        ctx->cur_processed.off = 0;
+    }
+
+    return H1_NEXT (ctx->space_next_state);
+}
+
+static uint32_t
+mod_http1x_parse_uri (struct mod_http1x_ctx *ctx, struct fh_conn *conn)
+{
+    (void) conn;
+
+    struct fh_chain_cur end_cur;
+
+    if (!fh_chain_find_char (&end_cur, &ctx->cur_processed, ' ',
+                             H1_URI_MAX_LEN))
+        return H1_AGAIN;
+
+    struct fh_chain_cpbuf cpbuf;
+
+    if (!fh_chain_copy_range (ctx->pool, &ctx->cur_processed, &end_cur,
+                              H1_URI_MAX_LEN, &cpbuf))
+        return H1_ERR (500);
+
+    ctx->result.uri = (char *) cpbuf.raw_buf;
+    ctx->result.uri_len = cpbuf.len;
+    ctx->cur_processed.chain = end_cur.chain;
+    ctx->cur_processed.off = end_cur.off;
+    ctx->space_next_state = H1_STATE_VERSION;
+
+    return H1_NEXT (H1_STATE_SPACE);
+}
+
+static uint32_t
+mod_http1x_parse_version (struct mod_http1x_ctx *ctx, struct fh_conn *conn)
+{
+    (void) conn;
+
+    struct fh_chain_cur end_cur;
+
+    if (!fh_chain_find_char (&end_cur, &ctx->cur_processed, '\n',
+                             H1_VERSION_MAX_LEN + 2))
+        return H1_AGAIN;
+
+    struct fh_chain_cpbuf cpbuf;
+
+    if (!fh_chain_copy_range (ctx->pool, &ctx->cur_processed, &end_cur,
+                              H1_VERSION_MAX_LEN + 2, &cpbuf))
+        return H1_ERR (500);
+
+    if (cpbuf.len < 2 && cpbuf.raw_buf[cpbuf.len - 2] != '\r')
+        return H1_ERR (400);
+
+    enum mod_http1x_version version;
+
+    if (!strncmp ((const char *) cpbuf.raw_buf, "HTTP/1.1", cpbuf.len - 1))
+        version = H1_VERSION_1_1;
+    else if (!strncmp ((const char *) cpbuf.raw_buf, "HTTP/1.0", cpbuf.len - 1))
+        version = H1_VERSION_1_0;
+    else
+        return H1_ERR (505);
+
+    ctx->result.version = version;
+    ctx->cur_processed.chain = end_cur.chain;
+    ctx->cur_processed.off = end_cur.off;
+
+    return H1_DONE;
+}
+
+static bool
+mod_http1x_parse (struct mod_http1x_ctx *ctx, struct fh_conn *conn)
 {
     for (;;)
     {
+        uint32_t ret;
+
         switch (ctx->state)
         {
             case H1_STATE_METHOD:
-                ctx->state = H1_STATE_SPACE;
+                if (!ctx->cur_processed.chain)
+                {
+                    ctx->cur_processed.chain = conn->chain_list->head;
+                    ctx->cur_processed.off = 0;
+                }
+
+                ret = mod_http1x_parse_method (ctx, conn);
                 break;
+
+            case H1_STATE_SPACE:
+                ret = mod_http1x_parse_space (ctx, conn);
+                break;
+
+            case H1_STATE_URI:
+                ret = mod_http1x_parse_uri (ctx, conn);
+                break;
+
+            case H1_STATE_VERSION:
+                ret = mod_http1x_parse_version (ctx, conn);
+                break;
+
+            case H1_STATE_DONE:
+                fh_pr_debug ("Already done parsing");
+                return true;
 
             default:
                 fh_pr_debug ("Invalid state: %i", ctx->state);
+                return false;
+        }
+
+        switch (ret >> 16U)
+        {
+            case 0:
+                ctx->state = ret & 0xFF;
+                continue;
+
+            case 1:
+                fh_pr_debug ("Parse error: %i", ret & 0xFFFF);
+                return false;
+
+            case 2:
+                fh_pr_debug ("Need more data");
+                return true;
+
+            case 3:
+                fh_pr_debug ("HTTP request info:");
+                fh_pr_debug ("Method: %i", ctx->result.method);
+                fh_pr_debug ("URI: (%zu) |%.*s|", ctx->result.uri_len,
+                             (int) ctx->result.uri_len, ctx->result.uri);
+                fh_pr_debug ("Version: %i", ctx->result.version);
+                ctx->state = H1_STATE_DONE;
+                return true;
+
+            default:
+                fh_pr_debug ("Invalid return code: %i", ret >> 16U);
                 return false;
         }
     }
@@ -156,12 +359,12 @@ mod_http1x_parse (struct mod_http1x_ctx *ctx)
 static bool
 mod_http1x_conn_probe (struct fh_module *module, struct fh_conn *conn)
 {
-    struct mod_http1x_ctx *ctx = mod_http1x_ctx_create (NULL, 0);
+    struct mod_http1x_ctx *ctx = mod_http1x_ctx_create (
+        conn->chain_list ? conn->chain_list->head : NULL, 0);
 
     if (!ctx)
         return false;
 
-    ctx->state = H1_STATE_URI;
     fh_conn_set_module_data (module, conn, ctx,
                              (void (*) (void *)) &mod_http1x_ctx_free);
 
@@ -181,8 +384,7 @@ static bool
 mod_http1x_stream_read (struct fh_module *module, struct fh_conn *conn,
                         struct fh_chain_cur *last_cur)
 {
-    (void) module;
-    (void) conn;
+    (void) last_cur;
 
     struct mod_http1x_ctx *ctx = fh_conn_get_module_data (module, conn);
 
@@ -191,17 +393,11 @@ mod_http1x_stream_read (struct fh_module *module, struct fh_conn *conn,
 
     fh_pr_debug ("State: %d", ctx->state);
 
-    for (struct fh_chain *chain = last_cur->chain; chain; chain = chain->next)
+    if (!mod_http1x_parse (ctx, conn))
     {
-        size_t off = last_cur->chain == chain ? last_cur->off : 0;
-
-        if (off >= chain->buf->mem_size)
-            continue;
-
-        fh_pr_debug ("Buffer %p: (%zu)|%.*s|", (void *) chain->buf->mem_ptr,
-                     chain->buf->mem_size - off,
-                     (int) (chain->buf->mem_size - off),
-                     (char *) (chain->buf->mem_ptr + off));
+        fh_pr_err ("Parser error, closing connection");
+        fh_conn_close_from_module (conn);
+        return false;
     }
 
     return true;
