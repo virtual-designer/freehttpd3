@@ -9,3 +9,5 @@
    - [[file:introduction/licensing.org][1.1 Licensing (AGPL)]]
    - [[file:introduction/gfdl.org][1.2 GNU Free Documenation License v1.3]]
    - [[file:introduction/getting-started.org][1.3 Getting started]]
++ [[file:common-setups/cgi.org][2 Guides for commonly used setups]]
+   - [[file:common-setups/cgi.org][2.1 Running CGI scripts on the server]]

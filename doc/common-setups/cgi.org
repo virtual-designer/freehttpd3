@@ -1,0 +1,93 @@
+#                   -*- Org -*-
+#+include: ../config.org
+#+title: Running CGI scripts on the server
+
+#+BEGIN_WARNING
+This page documents features that are not currently implemented.
+#+END_WARNING
+
+* Handling and execution of CGI scripts in freehttpd
+
+The freehttpd server ships a loadable module ~mod_cgi~ with its source tree.
+This module is responsible for handling CGI scripts and executing them
+correctly.
+
+CGI scripts are usually just executable binaries or scripts that have executable
+/shebangs/ (~#!~, i.e. ~#!/bin/sh~) in the beginning of the file.  When a request
+arrives, ~mod_cgi~ checks whether the request goes to a CGI script.  If it does,
+then it inspects the CGI script file for appropriate shebangs if the file is not
+a ready-to-run binary.  Then, it forks a new process for the script to execute
+and forwards the contents back to the HTTP stream as response.  Headers, status
+codes and environment variables are handled carefully.
+
+* Configuring ~mod_cgi~
+
+In this guide, I will assume you have installed the freehttpd configuration
+files in ~/etc/~.  That means, your *sysconfdir* is ~/etc/~.
+
+1. *Create a new configuration file:* Simple.
+
+   #+BEGIN_SRC shell
+        touch /etc/freehttpd/conf.d/mod_cgi.conf
+   #+END_SRC
+
+2. *Open the new configuration file:* Use your favorite editor.  I will be using *Emacs*.
+
+   #+BEGIN_SRC shell
+        emacs /etc/freehttpd/conf.d/mod_cgi.conf
+   #+END_SRC
+
+3. *Put the following contents in the file:*
+
+   #+BEGIN_SRC conf
+     cgi {
+         # Enable CGI support.
+         enabled = true;
+
+         # This ensures many processes are not created at the same time, which can save
+         # the server from resource exhaustion.
+         max_processes = 8192;
+     }
+   #+END_SRC
+
+4. *Then Save it:* ~C-x C-s~ on Emacs.
+
+* Testing the setup
+
+Now that we have configured ~mod_cgi~, we can test if the setup is working.
+First, in the document root, create a new CGI script file ~test.cgi~.  Then open
+it up, again, using your favorite editor, and put the following contents in it:
+
+   #+BEGIN_SRC shell
+     #!/bin/sh
+
+     # Headers.
+     # X-CGI-Status is a special header which sets the response status code.
+     echo "X-CGI-Status: 200"
+
+     # Response content type.
+     echo "Content-Type: text/plain"
+
+     # This newline is important.  It marks the end of headers (EOH).
+     echo ""
+
+     # Response body
+     echo "Hello world from CGI!"
+   #+END_SRC
+
+Then open up your server host URL, and append ~/test.cgi~ as the request URI.
+For example: ~http://localhost/test.cgi~.
+
+You should see:
+
+#+BEGIN_EXAMPLE
+  Hello world from CGI!
+#+END_EXAMPLE
+
+in your browser.
+
+That's it.  Congratulations!  The setup is working.
+
+* More details and help
+
+For more details, please check out the dedicated ~mod_cgi~ documentation page.

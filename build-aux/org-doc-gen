@@ -53,6 +53,8 @@ show_version ()
 	echo "$(basename "$me") version $scriptver"
 }
 
+nl='
+'
 output=""
 emacs="emacs"
 
@@ -154,6 +156,29 @@ EOF
 		rm -f /tmp/emacs.log
 		exit 1
 	fi
+
+    files=`find "$output" -type f -print`
+    old_ifs="$IFS"
+    IFS="$nl"
+
+    for file in $files; do
+        name=`echo "$file" | sed -E "s|^$output||"`
+        dir=`dirname "$name"`
+        depth=`echo "$dir" | tr -cd '/' | wc -c | tr -d '[:space:]'`
+        prefix='.'
+
+        while test "$depth" -gt 0; do
+            prefix="$prefix/.."
+            depth=`expr $depth - 1`
+        done
+
+        tmp=`mktemp`
+        test -z "$tmp" && { pr_err "failed to create temporary file"; exit 1; }
+        sed "s|@@ORG_HTML_PREFIX@@|$prefix|g" "$file" > "$tmp"
+        mv "$tmp" "$file"
+    done
+
+    IFS="$old_ifs"
 }
 
 export_file ()

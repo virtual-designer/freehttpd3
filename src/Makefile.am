@@ -21,7 +21,7 @@
 SUBDIRS = include core hash mm log utils modules
 
 bin_PROGRAMS = freehttpd
-freehttpd_SOURCES = fhttpd.c
+freehttpd_SOURCES = freehttpd.c
 freehttpd_LDADD = \
 	core/libcore.a \
 	hash/libhash.a \

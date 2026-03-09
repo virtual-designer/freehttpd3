@@ -23,7 +23,8 @@ orgdoc_DATA = \
 	index.org \
 	introduction/licensing.org \
 	introduction/gfdl.org \
-	introduction/getting-started.org
+	introduction/getting-started.org \
+	common-setups/cgi.org
 
 nodist_doc_DATA = $(orgdoc_DATA:.org=.html)
 EXTRA_DIST = $(orgdoc_DATA)
@@ -32,11 +33,14 @@ OUTPUT_DIR = html
 
 all-local: $(OUTPUT_DIR)
 
-$(OUTPUT_DIR): $(nodist_doc_DATA)
+$(OUTPUT_DIR): $(nodist_doc_DATA) $(OUTPUT_DIR)/style.css
 	@$(top_srcdir)/build-aux/org-doc-gen -E "$(EMACS)" -o "$(OUTPUT_DIR)" .
 
+$(OUTPUT_DIR)/style.css: style.css
+	@echo "  CP           $@" && cp $^ $@
+
 $(nodist_doc_DATA): $(orgdoc_DATA)
-	@echo "  EMACSGENHTML $@"
+	@echo "  EMACSGENHTML $(OUTPUT_DIR)/$@"
 
 clean-local:
 	$(RM) -r $(OUTPUT_DIR)

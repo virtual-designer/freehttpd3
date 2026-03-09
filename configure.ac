@@ -28,7 +28,7 @@ AC_INIT([freehttpd],
   [freehttpd],
   [https://github.com/onesoft-sudo/freehttpd])
 
-AC_CONFIG_SRCDIR([src/fhttpd.c])
+AC_CONFIG_SRCDIR([src/freehttpd.c])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_REQUIRE_AUX_FILE([git-version-gen])
@@ -135,7 +135,7 @@ AC_PROG_EGREP
 CHECK_PROG_GPG
 
 AS_IF([test "$enable_doc" = "yes"], [
-	CHECK_PROG_EMACS
+    CHECK_PROG_EMACS
 ], [])
 
 LT_INIT
