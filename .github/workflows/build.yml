@@ -34,13 +34,6 @@ jobs:
           gcc --version
         if: matrix.os == 'macos-latest'
 
-#      - name: Generate Configuration Files
-#        run: |
-#          echo 'root = "'$(pwd)'/conf";' > conf/fhttpd.conf
-#          echo '' >> conf/fhttpd.conf
-#          echo 'include_optional "conf.d/*.conf";' >> conf/fhttpd.conf
-#          echo 'include_optional "hosts.d/*.conf";' >> conf/fhttpd.conf
-
       - name: Build
         run: |
           ./bootstrap
@@ -76,11 +69,6 @@ jobs:
             *.tar.bz2
             *.tar.xz
             *.asc
-
-#      - uses: actions/attest-build-provenance@v2
-#        with:
-#          subject-name: build-artifacts.zip
-#          subject-digest: sha256:${{ steps.upload.outputs.artifact-digest }}
 
   release:
     runs-on: ubuntu-latest
