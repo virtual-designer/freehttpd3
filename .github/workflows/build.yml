@@ -30,7 +30,7 @@ jobs:
 
       - name: Install Tools (Darwin)
         run: |
-          brew install automake autoconf libtool
+          brew install automake autoconf libtool siege
           gcc --version
         if: matrix.os == 'macos-latest'
 
