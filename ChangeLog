@@ -1,3 +1,66 @@
+10-03-2026  Ar Rakin <rakinar2@osndevs.org>
+
+     [*] fix: benchmarks
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+     [*] ci: update build workflow
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+     [*] ci: install siege on macos
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+     [*] fix: correct format specifiers
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+     [*] fix: darwin build flag change
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+     [*] build: prepare builds for LTO
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+     [*] ci: update build workflow
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+     [*] feat(mod_http1x): full support for parsing headers and request-line
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+10-03-2026  Ar Rakin <rakinar2@onesoftnet.eu.org>
+
+     [*] fix(darwin): using FD_CLOEXEC by mistake
+         
+         Signed-off-by: Ar Rakin <rakinar2@onesoftnet.eu.org>
+         
+
+09-03-2026  Ar Rakin <rakinar2@osndevs.org>
+
+     [*] doc: add mod_cgi docs for future
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+07-03-2026  Conventional Release Action <rakinar2@onesoftnet.eu.org>
+
+     [*] release: v3.16.0 [skip ci]
+         
+         Signed-off-by: Conventional Release Action <rakinar2@onesoftnet.eu.org>
+         
+
 07-03-2026  Ar Rakin <rakinar2@osndevs.org>
 
      [*] refactor: rename fh_pr_* to fh_log_*
