@@ -31,7 +31,13 @@ freehttpd_LDADD = \
 	utils/libutils.a \
 	-ldl
 
-freehttpd_LDFLAGS = -rdynamic -Wl,-ustr_trim_whitespace -Wl,-ufh_request_print $(AM_LDFLAGS)
+freehttpd_LDFLAGS = -rdynamic
+
+if PLAT_DARWIN
+freehttpd_LDFLAGS += -all_load
+else
+freehttpd_LDFLAGS += -Wl,-ustr_trim_whitespace -Wl,-ufh_request_print
+endif
 
 distclean-local:
 	rm -rf .deps
