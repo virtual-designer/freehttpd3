@@ -236,7 +236,7 @@ fh_server_create_socket (struct fh_server *server __attribute__ ((unused)),
     if (sockfd < 0)
         return -1;
 
-    if (!fd_add_flags (sockfd, O_NONBLOCK | FD_CLOEXEC))
+    if (!fd_add_flags (sockfd, O_NONBLOCK | O_CLOEXEC))
         return -1;
 #endif /* SOCK_NONBLOCK */
 
@@ -592,7 +592,7 @@ fh_server_accept (struct fh_server *server, fd_t server_fd,
         }
 
 #ifndef HAVE_ACCEPT4
-        if (!fd_add_flags (client_fd, O_NONBLOCK | FD_CLOEXEC))
+        if (!fd_add_flags (client_fd, O_NONBLOCK | O_CLOEXEC))
         {
             close (client_fd);
             continue;
