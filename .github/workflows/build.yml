@@ -37,7 +37,7 @@ jobs:
       - name: Build
         run: |
           ./bootstrap
-          ./configure --prefix=$(pwd)/build --disable-silent-rules
+          ./configure --prefix=$(pwd)/build --disable-silent-rules --enable-debug --enable-mod-all
           make -j$(nproc)
           make install
 
@@ -45,9 +45,6 @@ jobs:
         run: |
           make distcheck
           rm -rf freehttpd-*/ *.tar.*
-
-      - name: Install Modules
-        run: make install -C src/modules
 
       - name: Benchmark
         run: |

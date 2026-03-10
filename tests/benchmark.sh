@@ -50,5 +50,7 @@ echo "Benchmark completed successfully"
 kill -9 $pid
 ps aux | grep freehttpd | awk '{ print $2 }' | xargs kill -9
 
+cat freehttpd.log
+
 echo "Benchmark completed successfully"
 echo "Check freehttpd.log for details"

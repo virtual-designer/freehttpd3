@@ -60,5 +60,9 @@ echo "Benchmark completed successfully"
 kill -9 $pid
 ps aux | grep freehttpd | awk '{ print $2 }' | xargs kill -9
 
+cat valgrind.log
+echo "----------------------"
+cat freehttpd.log
+
 echo "Valgrind completed successfully"
-echo "Check valgrind.log for details"
+echo "Check freehttpd-valgrind.log for details"
