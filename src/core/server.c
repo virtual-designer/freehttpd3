@@ -510,7 +510,7 @@ fh_server_add_conn (struct fh_server *server, fd_t client_fd,
 bool
 fh_server_close_conn (struct fh_server *server, struct fh_conn *conn)
 {
-    fh_log_debug ("Closing connection: %zu", conn->id);
+    fh_log_debug ("Closing connection: %" PRIu64, conn->id);
     xpoll_unregister_fd (server->xpoll, conn->sockfd, XPOLL_IN | XPOLL_OUT);
     itable_remove (server->conn_table, (uint64_t) conn->sockfd);
 
