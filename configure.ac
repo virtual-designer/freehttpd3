@@ -210,6 +210,7 @@ AC_CONFIG_FILES([Makefile
                  src/hash/Makefile
                  src/mm/Makefile
                  src/log/Makefile
+                 src/server/Makefile
                  src/utils/Makefile
                  src/modules/Makefile
                  tests/Makefile])

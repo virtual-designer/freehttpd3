@@ -18,20 +18,10 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with OSN freehttpd.  If not, see <https://www.gnu.org/licenses/>.
 
-SUBDIRS = include core hash mm log server utils modules
-
-bin_PROGRAMS = freehttpd
-freehttpd_SOURCES = freehttpd.c
-freehttpd_LDADD = \
-	core/libcore.a \
-	hash/libhash.a \
-	log/liblog.a \
-	mm/libmm.a \
-	server/libserver.a \
-	utils/libutils.a \
-	-ldl
-
-freehttpd_LDFLAGS = -rdynamic -Wl,-ustr_trim_whitespace -Wl,-ufh_request_print
+noinst_LIBRARIES = libserver.a
+libserver_a_SOURCES = \
+	request.c \
+	request.h
 
 AM_CFLAGS = $(EXPORTED_AM_CFLAGS)
 AM_CPPFLAGS = $(EXPORTED_AM_CPPFLAGS)

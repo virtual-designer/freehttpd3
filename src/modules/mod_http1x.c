@@ -32,10 +32,14 @@
 #include "log/log.h"
 #include "mm/chain.h"
 #include "mm/pool.h"
+#include "server/request.h"
+#include "utils/strutils.h"
 
 #define H1_METHOD_MAX_LEN 8
 #define H1_URI_MAX_LEN 4096
 #define H1_VERSION_MAX_LEN 8
+#define H1_HEADER_NAME_MAX_LEN 256
+#define H1_HEADER_VALUE_MAX_LEN 2048
 
 enum mod_http1x_state
 {
@@ -57,26 +61,6 @@ enum mod_http1x_err
     H1_ERR_MALFORMED,
 };
 
-enum mod_http1x_version
-{
-    H1_VERSION_1_0,
-    H1_VERSION_1_1,
-};
-
-enum mod_http1x_method
-{
-    HTTP_GET,
-    HTTP_POST,
-};
-
-struct mod_http1x_result
-{
-    enum mod_http1x_method method;
-    char *uri;
-    size_t uri_len;
-    enum mod_http1x_version version;
-};
-
 struct mod_http1x_ctx
 {
     struct fh_pool *pool;
@@ -85,7 +69,8 @@ struct mod_http1x_ctx
     enum mod_http1x_state state;
     enum mod_http1x_err error;
     struct fh_chain_cur cur_processed, cur_seen;
-    struct mod_http1x_result result;
+    struct fh_request request;
+    struct fh_header *current_header;
 };
 
 static bool
@@ -110,6 +95,7 @@ mod_http1x_ctx_init (struct mod_http1x_ctx *ctx, struct fh_chain *start_chain,
     ctx->cur_seen.off = ctx->cur_processed.off = start_off;
     ctx->state = H1_STATE_METHOD;
     ctx->error = H1_ERR_NONE;
+    ctx->request.headers = NULL;
 
     return true;
 }
@@ -171,7 +157,7 @@ mod_http1x_parse_method (struct mod_http1x_ctx *ctx, struct fh_conn *conn)
                               H1_METHOD_MAX_LEN, &cpbuf))
         return H1_ERR (500);
 
-    enum mod_http1x_method method;
+    enum fh_method method;
 
     if (!strncmp ((const char *) cpbuf.raw_buf, "GET", cpbuf.len))
         method = HTTP_GET;
@@ -180,7 +166,7 @@ mod_http1x_parse_method (struct mod_http1x_ctx *ctx, struct fh_conn *conn)
     else
         return H1_ERR (405);
 
-    ctx->result.method = method;
+    ctx->request.method = method;
     ctx->cur_processed.chain = end_cur.chain;
     ctx->cur_processed.off = end_cur.off;
     ctx->space_next_state = H1_STATE_URI;
@@ -241,8 +227,8 @@ mod_http1x_parse_uri (struct mod_http1x_ctx *ctx, struct fh_conn *conn)
                               H1_URI_MAX_LEN, &cpbuf))
         return H1_ERR (500);
 
-    ctx->result.uri = (char *) cpbuf.raw_buf;
-    ctx->result.uri_len = cpbuf.len;
+    ctx->request.uri = (char *) cpbuf.raw_buf;
+    ctx->request.uri_len = cpbuf.len;
     ctx->cur_processed.chain = end_cur.chain;
     ctx->cur_processed.off = end_cur.off;
     ctx->space_next_state = H1_STATE_VERSION;
@@ -267,23 +253,131 @@ mod_http1x_parse_version (struct mod_http1x_ctx *ctx, struct fh_conn *conn)
                               H1_VERSION_MAX_LEN + 2, &cpbuf))
         return H1_ERR (500);
 
-    if (cpbuf.len < 2 && cpbuf.raw_buf[cpbuf.len - 2] != '\r')
+    if (cpbuf.len < 2 || cpbuf.raw_buf[cpbuf.len - 1] != '\r')
         return H1_ERR (400);
 
-    enum mod_http1x_version version;
+    enum fh_http_version version;
 
     if (!strncmp ((const char *) cpbuf.raw_buf, "HTTP/1.1", cpbuf.len - 1))
-        version = H1_VERSION_1_1;
+        version = HTTP_VERSION_1_1;
     else if (!strncmp ((const char *) cpbuf.raw_buf, "HTTP/1.0", cpbuf.len - 1))
-        version = H1_VERSION_1_0;
+        version = HTTP_VERSION_1_0;
     else
         return H1_ERR (505);
 
-    ctx->result.version = version;
+    ctx->request.version = version;
     ctx->cur_processed.chain = end_cur.chain;
-    ctx->cur_processed.off = end_cur.off;
+    ctx->cur_processed.off = end_cur.off + 1;
 
-    return H1_DONE;
+    return H1_NEXT (H1_STATE_HEADER_NAME);
+}
+
+static uint32_t
+mod_http1x_parse_header_name (struct mod_http1x_ctx *ctx, struct fh_conn *conn)
+{
+    (void) conn;
+
+    struct fh_chain_cur end_cur;
+
+    if (!fh_chain_find_char (&end_cur, &ctx->cur_processed, ':',
+                             H1_HEADER_NAME_MAX_LEN + 1))
+    {
+        if (fh_chain_find_char (&end_cur, &ctx->cur_processed, '\n', 2))
+        {
+            struct fh_chain_cpbuf cpbuf;
+
+            if (!fh_chain_copy_range (ctx->pool, &ctx->cur_processed, &end_cur,
+                                      2, &cpbuf))
+                return H1_ERR (500);
+
+            if (cpbuf.len == 1 && cpbuf.raw_buf[0] == '\r')
+            {
+                ctx->cur_processed.chain = end_cur.chain;
+                ctx->cur_processed.off = end_cur.off + 1;
+                return H1_DONE;
+            }
+
+            return H1_AGAIN;
+        }
+
+        return H1_AGAIN;
+    }
+
+    struct fh_chain_cpbuf cpbuf;
+
+    if (!fh_chain_copy_range (ctx->pool, &ctx->cur_processed, &end_cur,
+                              H1_HEADER_NAME_MAX_LEN + 1, &cpbuf))
+        return H1_ERR (500);
+
+    if (cpbuf.len < 2)
+        return H1_ERR (400);
+
+    struct fh_header *header = fh_pool_alloc (ctx->pool, sizeof (*header));
+
+    if (!header)
+        return H1_ERR (500);
+
+    header->name = (const char *) cpbuf.raw_buf;
+    header->name_len = cpbuf.len;
+
+    ctx->current_header = header;
+    ctx->cur_processed.chain = end_cur.chain;
+    ctx->cur_processed.off = end_cur.off + 1;
+
+    fh_log_debug ("Header: (%zu) |%.*s|", cpbuf.len, (int) cpbuf.len,
+                  header->name);
+
+    return H1_NEXT (H1_STATE_HEADER_VALUE);
+}
+
+static uint32_t
+mod_http1x_parse_header_value (struct mod_http1x_ctx *ctx, struct fh_conn *conn)
+{
+    (void) conn;
+
+    struct fh_chain_cur end_cur;
+
+    if (!fh_chain_find_char (&end_cur, &ctx->cur_processed, '\n',
+                             H1_HEADER_VALUE_MAX_LEN + 2))
+        return H1_AGAIN;
+
+    struct fh_chain_cpbuf cpbuf;
+
+    if (!fh_chain_copy_range (ctx->pool, &ctx->cur_processed, &end_cur,
+                              H1_HEADER_VALUE_MAX_LEN + 2, &cpbuf))
+        return H1_ERR (500);
+
+    if (cpbuf.len < 2 || cpbuf.raw_buf[cpbuf.len - 1] != '\r')
+        return H1_ERR (400);
+
+    struct fh_header *header = ctx->current_header;
+
+    header->value = str_trim_whitespace ((const char *) cpbuf.raw_buf,
+                                         cpbuf.len - 1, &header->value_len);
+    header->next = NULL;
+
+    if (!ctx->request.headers)
+    {
+        ctx->request.headers
+            = fh_pool_alloc (ctx->pool, sizeof (*ctx->request.headers));
+
+        if (!ctx->request.headers)
+            return H1_ERR (500);
+
+        ctx->request.headers->head = ctx->request.headers->tail = header;
+    }
+    else
+    {
+        ctx->request.headers->tail->next = header;
+        ctx->request.headers->tail = header;
+    }
+
+    ctx->cur_processed.chain = end_cur.chain;
+    ctx->cur_processed.off = end_cur.off + 1;
+
+    fh_log_debug ("Header value: (%zu) |%.*s|", header->value_len,
+                  (int) header->value_len, header->value);
+    return H1_NEXT (H1_STATE_HEADER_NAME);
 }
 
 static bool
@@ -317,6 +411,14 @@ mod_http1x_parse (struct mod_http1x_ctx *ctx, struct fh_conn *conn)
                 ret = mod_http1x_parse_version (ctx, conn);
                 break;
 
+            case H1_STATE_HEADER_NAME:
+                ret = mod_http1x_parse_header_name (ctx, conn);
+                break;
+
+            case H1_STATE_HEADER_VALUE:
+                ret = mod_http1x_parse_header_value (ctx, conn);
+                break;
+
             case H1_STATE_DONE:
                 fh_log_debug ("Already done parsing");
                 return true;
@@ -341,11 +443,6 @@ mod_http1x_parse (struct mod_http1x_ctx *ctx, struct fh_conn *conn)
                 return true;
 
             case 3:
-                fh_log_debug ("HTTP request info:");
-                fh_log_debug ("Method: %i", ctx->result.method);
-                fh_log_debug ("URI: (%zu) |%.*s|", ctx->result.uri_len,
-                             (int) ctx->result.uri_len, ctx->result.uri);
-                fh_log_debug ("Version: %i", ctx->result.version);
                 ctx->state = H1_STATE_DONE;
                 return true;
 
@@ -398,6 +495,16 @@ mod_http1x_stream_read (struct fh_module *module, struct fh_conn *conn,
         fh_log_err ("Parser error, closing connection");
         fh_conn_close_from_module (conn);
         return false;
+    }
+
+    if (ctx->state == H1_STATE_DONE)
+    {
+        fh_request_print (&ctx->request);
+        char text[] = "HTTP/1.1 200 OK\r\nServer: freehttpd\r\nContent-Type: "
+                      "text/plain\r\n\r\nHello world!\n";
+        send (conn->sockfd, text, sizeof text - 1, 0);
+        fh_conn_close_from_module (conn);
+        return true;
     }
 
     return true;

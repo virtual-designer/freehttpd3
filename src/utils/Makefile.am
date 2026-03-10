@@ -3,7 +3,9 @@ libutils_a_SOURCES = \
 	datetime.c \
 	datetime.h \
 	utils.c \
-	utils.h
+	utils.h \
+	strutils.c \
+	strutils.h
 
 AM_CFLAGS = $(EXPORTED_AM_CFLAGS)
 AM_CPPFLAGS = $(EXPORTED_AM_CPPFLAGS)

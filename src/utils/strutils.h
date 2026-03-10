@@ -17,19 +17,20 @@
  * along with OSN freehttpd.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef FH_UTILS_H
-#define FH_UTILS_H
+#ifndef FH_STRUTILS_H
+#define FH_STRUTILS_H
 
-#include "compat.h"
-#include "types.h"
+#include <stddef.h>
 
-#include <stdbool.h>
-#include <stdint.h>
+struct str_split_result
+{
+	char **strings;
+	size_t count;
+};
 
-_noreturn void freeze (void);
-bool fd_set_nonblocking (fd_t fd);
-bool fd_add_flags (fd_t fd, int new_flags);
-const char *get_file_ext (const char *filename);
-uint64_t powull (uint64_t base, uint64_t exp);
+const char *str_trim_whitespace (const char *str, size_t len, size_t *out_len);
+struct str_split_result *str_split (const char *haystack, const char *needle);
+void str_split_free (struct str_split_result *result);
+uint64_t strntoull (const char *str, size_t len, int base);
 
-#endif /* FH_UTILS_H */
+#endif /* FH_STRUTILS_H */
