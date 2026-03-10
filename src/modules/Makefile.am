@@ -18,7 +18,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with OSN freehttpd.  If not, see <https://www.gnu.org/licenses/>.
 
-COMMON_MODULE_CFLAGS = -module -avoid-version -shared -export-dynamic
+COMMON_MODULE_LDFLAGS = -module -avoid-version -shared -export-dynamic $(AM_LDFLAGS)
 
 moduledir = $(FHTTPD_MODULE_PATH)
 module_LTLIBRARIES =
@@ -26,7 +26,7 @@ module_LTLIBRARIES =
 if ENABLE_MOD_HTTP1X
 module_LTLIBRARIES += mod_http1x.la
 mod_http1x_la_SOURCES = mod_http1x.c
-mod_http1x_la_LDFLAGS = $(COMMON_MODULE_CFLAGS)
+mod_http1x_la_LDFLAGS = $(COMMON_MODULE_LDFLAGS)
 endif
 
 distclean-local:

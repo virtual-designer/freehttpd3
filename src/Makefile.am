@@ -31,11 +31,7 @@ freehttpd_LDADD = \
 	utils/libutils.a \
 	-ldl
 
-freehttpd_LDFLAGS = -rdynamic -Wl,-ustr_trim_whitespace -Wl,-ufh_request_print
-
-AM_CFLAGS = $(EXPORTED_AM_CFLAGS)
-AM_CPPFLAGS = $(EXPORTED_AM_CPPFLAGS)
-AM_LDFLAGS = $(EXPORTED_AM_LDFLAGS)
+freehttpd_LDFLAGS = -rdynamic -Wl,-ustr_trim_whitespace -Wl,-ufh_request_print $(AM_LDFLAGS)
 
 distclean-local:
 	rm -rf .deps
