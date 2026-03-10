@@ -50,11 +50,17 @@ chain_test_helper_LDADD = \
 
 EXTRA_DIST = $(TESTS)
 
+if PLAT_DARWIN
+DARWIN = 1
+endif
+
 check-local:
 	@if test "$(PLAT_DARWIN)" = "1"; then $(MAKE) -C $(top_builddir)/src clean; fi
 
 check-valgrind-benchmark:
-	BINDIR=$(top_srcdir)/src $(SHELL) valgrind-benchmark.sh
+	if test "$(DARWIN)" != 1; then \
+		BINDIR=$(top_srcdir)/src $(SHELL) valgrind-benchmark.sh; \
+	fi
 
 check-benchmark:
 	BINDIR=$(top_srcdir)/src $(SHELL) benchmark.sh

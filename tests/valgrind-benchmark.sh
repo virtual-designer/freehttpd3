@@ -44,7 +44,7 @@ sleep 2
 if ! kill -0 "$pid" > /dev/null; then
 	echo "freehttpd failed to start" >&2
 	echo "logs [last 100 lines]:" >&2
-	tail -n100 freehttpd.log >&2
+	tail -n100 freehttpd-valgrind.log >&2
 	exit 1
 fi
 

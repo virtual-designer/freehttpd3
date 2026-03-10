@@ -46,13 +46,17 @@ jobs:
           make distcheck
           rm -rf freehttpd-*/ *.tar.*
 
+      - name: Install Modules
+        run: make install -C src/modules
+
       - name: Benchmark
         run: |
-          BINDIR=$(pwd)/build/bin make check-benchmark || (tail -n100 tests/freehttpd.log && exit 1)
+          make check-benchmark || (tail -n100 tests/freehttpd.log && exit 1)
 
       - name: Valgrind Benchmark
         run: |
-          BINDIR=$(pwd)/build/bin make check-valgrind-benchmark || (tail -n100 tests/freehttpd-valgrind.log && exit 1)
+          make check-valgrind-benchmark || (tail -n100 tests/freehttpd-valgrind.log && exit 1)
+        if: matrix.os == 'ubuntu-latest'
 
       - name: Upload Artifacts
         id: upload
