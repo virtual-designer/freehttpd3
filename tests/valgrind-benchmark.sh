@@ -44,7 +44,10 @@ sleep 2
 if ! kill -0 "$pid" > /dev/null; then
 	echo "freehttpd failed to start" >&2
 	echo "logs [last 100 lines]:" >&2
-	tail -n100 freehttpd-valgrind.log >&2
+    tail -n100 freehttpd-valgrind.log >&2
+    echo "----------------------------------------------"
+    echo "valgrind logs [last 100 lines]:" >&2
+    tail -n100 valgrind.log >&2
 	exit 1
 fi
 
@@ -60,9 +63,11 @@ echo "Benchmark completed successfully"
 kill -9 $pid
 ps aux | grep freehttpd | awk '{ print $2 }' | xargs kill -9
 
-cat valgrind.log
-echo "----------------------"
-cat freehttpd.log
+echo "logs [last 100 lines]:"
+tail -n100 freehttpd-valgrind.log
+echo "----------------------------------------------"
+echo "valgrind logs [last 100 lines]:"
+tail -n100 valgrind.log
 
 echo "Valgrind completed successfully"
-echo "Check freehttpd-valgrind.log for details"
+echo "Check valgrind.log and freehttpd-valgrind.log for details"

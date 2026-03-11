@@ -21,7 +21,8 @@
 noinst_LIBRARIES = libserver.a
 libserver_a_SOURCES = \
 	request.c \
-	request.h
+	request.h \
+	protocol.h
 
 distclean-local:
 	rm -rf .deps

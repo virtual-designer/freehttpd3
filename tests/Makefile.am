@@ -59,7 +59,7 @@ check-local:
 
 check-valgrind-benchmark:
 	if test "$(DARWIN)" != 1; then \
-		BINDIR=$(top_srcdir)/src $(SHELL) valgrind-benchmark.sh; \
+		BINDIR=$(top_srcdir)/src $(SHELL) valgrind-benchmark.sh || exit 1; \
 	fi
 
 check-benchmark:
