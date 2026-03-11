@@ -100,7 +100,7 @@ test_single_buffer (void)
 
 	print_chain (chain);
 
-	assert (fh_chain_find_char (&end_cur, &start_cur, ' ', 16));
+	assert (fh_chain_find_char (&end_cur, &start_cur, ' ', 16) == FIND_CHAR_OK);
 
 	assert (end_cur.chain == chain);
 	assert (end_cur.off == 3);
@@ -119,7 +119,7 @@ test_split_buffers (void)
 
 	print_chain (chain);
 
-	assert (fh_chain_find_char (&end_cur, &start_cur, ' ', 16));
+	assert (fh_chain_find_char (&end_cur, &start_cur, ' ', 16) == FIND_CHAR_OK);
 
 	assert (end_cur.chain == chain->next);
 	assert (end_cur.off == 1);
@@ -139,7 +139,7 @@ test_chain_zero_copy (void)
 
 	print_chain (chain);
 
-	assert (fh_chain_find_char (&end_cur, &start_cur, ' ', 16));
+	assert (fh_chain_find_char (&end_cur, &start_cur, ' ', 16) == FIND_CHAR_OK);
 
 	assert (end_cur.chain == chain);
 	assert (end_cur.off == 3);
@@ -171,7 +171,7 @@ test_chain_copy (void)
 
 	print_chain (chain);
 
-	assert (fh_chain_find_char (&end_cur, &start_cur, ' ', 16));
+	assert (fh_chain_find_char (&end_cur, &start_cur, ' ', 16) == FIND_CHAR_OK);
 
 	assert (end_cur.chain == chain->next->next);
 	assert (end_cur.off == 2);

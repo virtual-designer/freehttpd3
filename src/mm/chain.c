@@ -147,7 +147,7 @@ fh_chain_read (struct fh_pool *pool, fd_t fd, struct fh_chain **head,
     }
 }
 
-bool
+int
 fh_chain_find_char (struct fh_chain_cur *dest_cur,
                     const struct fh_chain_cur *begin, int delim, size_t max_len)
 {
@@ -172,7 +172,7 @@ fh_chain_find_char (struct fh_chain_cur *dest_cur,
             dest_cur->chain = current;
             dest_cur->off = off;
 
-            return true;
+            return FIND_CHAR_OK;
         }
 
         total_len += size;
@@ -181,13 +181,13 @@ fh_chain_find_char (struct fh_chain_cur *dest_cur,
         {
             dest_cur->chain = current;
             dest_cur->off = current->buf->mem_size;
-            return false;
+            return total_len >= max_len ? FIND_CHAR_LIMIT : FIND_CHAR_NOT_FOUND;
         }
 
         current = current->next;
     }
 
-    return false;
+    return FIND_CHAR_NOT_FOUND;
 }
 
 bool
@@ -206,7 +206,7 @@ fh_chain_copy_range (struct fh_pool *pool, struct fh_chain_cur *start_cur,
         cpbuf->len = is_same_chain && end_cur->off > start_cur->off
                          ? end_cur->off - start_cur->off
                          : start_cur->chain->buf->mem_size - start_cur->off;
-	
+
         if (cpbuf->len >= max_probable_len)
             cpbuf->len = max_probable_len;
 
@@ -271,5 +271,6 @@ fh_chain_print (struct fh_chain *chain)
                 chain->buf->mem_ptr);
         printf ("\n");
         chain = chain->next;
+        i++;
     }
 }

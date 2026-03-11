@@ -90,9 +90,14 @@ bool fh_chain_read (struct fh_pool *pool, fd_t fd, struct fh_chain **head,
                     struct fh_chain **tail);
 struct fh_chain *fh_chain_new_with_buf_mem (struct fh_pool *pool,
                                             size_t capacity);
-bool fh_chain_find_char (struct fh_chain_cur *dest_cur,
-                         const struct fh_chain_cur *begin, int delim,
-                         size_t max_len);
+
+#define FIND_CHAR_OK 0
+#define FIND_CHAR_NOT_FOUND 1
+#define FIND_CHAR_LIMIT 2
+
+int fh_chain_find_char (struct fh_chain_cur *dest_cur,
+                        const struct fh_chain_cur *begin, int delim,
+                        size_t max_len);
 bool fh_chain_copy_range (struct fh_pool *pool, struct fh_chain_cur *start_cur,
                           struct fh_chain_cur *end_cur, size_t max_probable_len,
                           struct fh_chain_cpbuf *cpbuf);

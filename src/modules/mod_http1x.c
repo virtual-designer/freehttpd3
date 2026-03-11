@@ -144,12 +144,14 @@ mod_http1x_parse_method (struct mod_http1x_ctx *ctx, struct fh_conn *conn)
     (void) conn;
 
     struct fh_chain_cur end_cur;
+    int rc;
 
     fh_chain_print (ctx->cur_processed.chain);
 
-    if (!fh_chain_find_char (&end_cur, &ctx->cur_processed, ' ',
-                             H1_METHOD_MAX_LEN))
-        return H1_AGAIN;
+    if ((rc = fh_chain_find_char (&end_cur, &ctx->cur_processed, ' ',
+                                  H1_METHOD_MAX_LEN))
+        != FIND_CHAR_OK)
+        return rc == FIND_CHAR_NOT_FOUND ? H1_AGAIN : H1_ERR (400);
 
     struct fh_chain_cpbuf cpbuf;
 
@@ -216,10 +218,12 @@ mod_http1x_parse_uri (struct mod_http1x_ctx *ctx, struct fh_conn *conn)
     (void) conn;
 
     struct fh_chain_cur end_cur;
+    int rc;
 
-    if (!fh_chain_find_char (&end_cur, &ctx->cur_processed, ' ',
-                             H1_URI_MAX_LEN))
-        return H1_AGAIN;
+    if ((rc = fh_chain_find_char (&end_cur, &ctx->cur_processed, ' ',
+                                  H1_URI_MAX_LEN))
+        != FIND_CHAR_OK)
+        return rc == FIND_CHAR_NOT_FOUND ? H1_AGAIN : H1_ERR (414);
 
     struct fh_chain_cpbuf cpbuf;
 
@@ -242,10 +246,12 @@ mod_http1x_parse_version (struct mod_http1x_ctx *ctx, struct fh_conn *conn)
     (void) conn;
 
     struct fh_chain_cur end_cur;
+    int rc;
 
-    if (!fh_chain_find_char (&end_cur, &ctx->cur_processed, '\n',
-                             H1_VERSION_MAX_LEN + 2))
-        return H1_AGAIN;
+    if ((rc = fh_chain_find_char (&end_cur, &ctx->cur_processed, '\n',
+                                  H1_VERSION_MAX_LEN + 2))
+        != FIND_CHAR_OK)
+        return rc == FIND_CHAR_NOT_FOUND ? H1_AGAIN : H1_ERR (400);
 
     struct fh_chain_cpbuf cpbuf;
 
@@ -278,29 +284,42 @@ mod_http1x_parse_header_name (struct mod_http1x_ctx *ctx, struct fh_conn *conn)
     (void) conn;
 
     struct fh_chain_cur end_cur;
-
-    if (!fh_chain_find_char (&end_cur, &ctx->cur_processed, ':',
-                             H1_HEADER_NAME_MAX_LEN + 1))
+    int rc = fh_chain_find_char (&end_cur, &ctx->cur_processed, ':',
+                                 H1_HEADER_NAME_MAX_LEN + 1);
+    switch (rc)
     {
-        if (fh_chain_find_char (&end_cur, &ctx->cur_processed, '\n', 2))
-        {
-            struct fh_chain_cpbuf cpbuf;
-
-            if (!fh_chain_copy_range (ctx->pool, &ctx->cur_processed, &end_cur,
-                                      2, &cpbuf))
-                return H1_ERR (500);
-
-            if (cpbuf.len == 1 && cpbuf.raw_buf[0] == '\r')
+        case FIND_CHAR_NOT_FOUND:
             {
-                ctx->cur_processed.chain = end_cur.chain;
-                ctx->cur_processed.off = end_cur.off + 1;
-                return H1_DONE;
+                int rc2 = fh_chain_find_char (&end_cur, &ctx->cur_processed,
+                                              '\n', 2);
+
+                switch (rc2)
+                {
+                    case FIND_CHAR_LIMIT:
+                        return H1_ERR (400);
+
+                    case FIND_CHAR_NOT_FOUND:
+                        return H1_AGAIN;
+                }
+
+                struct fh_chain_cpbuf cpbuf;
+
+                if (!fh_chain_copy_range (ctx->pool, &ctx->cur_processed,
+                                          &end_cur, 2, &cpbuf))
+                    return H1_ERR (500);
+
+                if (cpbuf.len == 1 && cpbuf.raw_buf[0] == '\r')
+                {
+                    ctx->cur_processed.chain = end_cur.chain;
+                    ctx->cur_processed.off = end_cur.off + 1;
+                    return H1_DONE;
+                }
+
+                return H1_ERR (500);
             }
 
-            return H1_AGAIN;
-        }
-
-        return H1_AGAIN;
+        case FIND_CHAR_LIMIT:
+            return H1_ERR (400);
     }
 
     struct fh_chain_cpbuf cpbuf;
@@ -336,10 +355,12 @@ mod_http1x_parse_header_value (struct mod_http1x_ctx *ctx, struct fh_conn *conn)
     (void) conn;
 
     struct fh_chain_cur end_cur;
+    int rc;
 
-    if (!fh_chain_find_char (&end_cur, &ctx->cur_processed, '\n',
-                             H1_HEADER_VALUE_MAX_LEN + 2))
-        return H1_AGAIN;
+    if ((rc = fh_chain_find_char (&end_cur, &ctx->cur_processed, '\n',
+                                  H1_HEADER_VALUE_MAX_LEN + 2))
+        != FIND_CHAR_OK)
+        return rc == FIND_CHAR_NOT_FOUND ? H1_AGAIN : H1_ERR (400);
 
     struct fh_chain_cpbuf cpbuf;
 
