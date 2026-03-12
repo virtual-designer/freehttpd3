@@ -62,8 +62,8 @@ it up, again, using your favorite editor, and put the following contents in it:
      #!/bin/sh
 
      # Headers.
-     # X-CGI-Status is a special header which sets the response status code.
-     echo "X-CGI-Status: 200"
+     # "Status" is a special header which sets the response status code.
+     echo "Status: 200"
 
      # Response content type.
      echo "Content-Type: text/plain"
