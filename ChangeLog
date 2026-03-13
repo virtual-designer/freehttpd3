@@ -1,8 +1,37 @@
+13-03-2026  Ar Rakin <rakinar2@osndevs.org>
+
+     [*] feat(server): basic router and radix tree implementation
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+12-03-2026  Ar Rakin <rakinar2@osndevs.org>
+
+     [*] doc: update cgi conf example
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
 11-03-2026  Ar Rakin <rakinar2@osndevs.org>
+
+     [*] merge: branch 'main' of github.com:virtual-designer/freehttpd3
+         
+
+     [*] refactor: http status codes
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
 
      [*] fix: handle max length checks correctly across chains
          
          Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+11-03-2026  Conventional Release Action <rakinar2@onesoftnet.eu.org>
+
+     [*] release: v3.17.1 [skip ci]
+         
+         Signed-off-by: Conventional Release Action <rakinar2@onesoftnet.eu.org>
          
 
 10-03-2026  Ar Rakin <rakinar2@osndevs.org>
