@@ -38,11 +38,15 @@ AM_TESTS_ENVIRONMENT += \
 	VALGRIND=$(top_srcdir)/build-aux/valgrind
 endif
 
-check_PROGRAMS = itable.test.helper strtable.test.helper chain.test.helper
-TESTS = itable.test strtable.test chain.test
+check_PROGRAMS = itable.test.helper strtable.test.helper chain.test.helper router.test.helper
+TESTS = itable.test strtable.test chain.test router.test
 
 itable_test_helper_SOURCES = itable.test.c $(top_srcdir)/src/hash/itable.c $(top_srcdir)/src/hash/itable.h
 strtable_test_helper_SOURCES = strtable.test.c $(top_srcdir)/src/hash/strtable.c $(top_srcdir)/src/hash/strtable.h
+router_test_helper_SOURCES = router.test.c $(top_srcdir)/src/server/router.c $(top_srcdir)/src/server/router.h
+router_test_helper_LDADD = \
+	$(top_builddir)/src/core/libcore.a \
+	$(top_builddir)/src/utils/libutils.a
 chain_test_helper_SOURCES = chain.test.c
 chain_test_helper_LDADD = \
 	$(top_builddir)/src/log/liblog.a \

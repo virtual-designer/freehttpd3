@@ -58,6 +58,12 @@ main (void)
 	config->hosts->ports[1] = 4080;
 	config->hosts->ports[2] = 4443;
 	config->hosts->ports[3] = 8443;
+	config->hosts->routes = calloc (1, sizeof (struct fh_config_route *));
+	config->hosts->routes[0] = calloc (1, sizeof (struct fh_config_route));
+	config->hosts->routes[0]->route = strdup ("/secret");
+	config->hosts->routes[0]->redirect_url = strdup ("https://www.google.com");
+	config->hosts->routes[0]->redirect_status = 302;
+	config->hosts->routes[0]->redirect_url_len = strlen (config->hosts->routes[0]->redirect_url);
 	config->hosts->port_count = 4;
 
 	fh_log_info ("Starting server");
