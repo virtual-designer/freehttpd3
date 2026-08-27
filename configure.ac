@@ -1,37 +1,17 @@
-#                                               -*- Autoconf -*-
-# Process this file with autoconf to produce a configure script.
-#
-# This file is part of OSN freehttpd.
-#
-# Copyright (C) 2025  OSN Developers.
-#
-# OSN freehttpd is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# OSN freehttpd is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-#
-# You should have received a copy of the GNU Affero General Public License
-# along with OSN freehttpd.  If not, see <https://www.gnu.org/licenses/>.
+dnl                                               -*- Autoconf -*-
+dnl Process this file with autoconf to produce a configure script.
+
+m4_define([FHTTPD_VERSION], m4_esyscmd([build-aux/git-version-gen -g -d .github/version.json .version]))
 
 AC_PREREQ([2.61])
-
-define([FHTTPD_VERSION], m4_esyscmd([build-aux/git-version-gen -g -d .github/version.json .version]))
-
 AC_INIT([freehttpd],
   FHTTPD_VERSION,
   [bug-freehttpd@lists.onesoftnet.eu.org],
   [freehttpd],
   [https://github.com/onesoft-sudo/freehttpd])
-
-AC_CONFIG_SRCDIR([src/freehttpd.c])
+AC_CONFIG_SRCDIR([src/progs/freehttpd.c])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_AUX_DIR([build-aux])
-AC_REQUIRE_AUX_FILE([git-version-gen])
 AC_CONFIG_MACRO_DIR([m4])
 
 AC_CANONICAL_TARGET
@@ -42,177 +22,23 @@ AM_SILENT_RULES([yes])
 
 AC_SUBST([VERSION], FHTTPD_VERSION)
 
-# Paths
-top_builddir=`pwd`
-abs_srcdir="$(dirname "$0")/src"
-abs_srcdir="$(readlink -f "$abs_srcdir")"
-eff_libdir=""
-
-AS_IF([test "$exec_prefix" != "NONE" && test -z "$eff_libdir"], [
-	eff_libdir="$exec_prefix/lib"
-], [])
-
-AS_IF([test "$prefix" != "NONE" && test -z "$eff_libdir"], [
-	eff_libdir="$prefix/lib"
-], [])
-
-AS_IF([test -z "$eff_libdir"], [
-	eff_libdir="/lib"
-], [])
-
-# Default flags
-CONCAT_SPACED_STRING([CPPFLAGS], [-I$abs_srcdir/include -I$abs_srcdir -I$top_builddir/res -DHAVE_RESOURCES -DHAVE_CONFPATHS_H])
-
-# Arguments
-AC_ARG_ENABLE([debug],
-              [AS_HELP_STRING([--enable-debug], [Enable debug build mode (default: no)])],
-              [build_type=debug],
-              [build_type=release])
-
-AC_ARG_ENABLE([maintainer-mode],
-            [AS_HELP_STRING([--enable-maintainer-mode], [Enable default flags and settings used by maintainers (default: no).])],
-            [enable_maintainer_mode=yes],
-            [enable_maintainer_mode=no])
-
-AC_ARG_ENABLE([doc],
-            [AS_HELP_STRING([--enable-doc], [Build documentation (default: no).])],
-            [enable_doc=yes],
-            [enable_doc=no])
-
-AC_ARG_WITH([module-path],
-            [AS_HELP_STRING([--with-module-path=PATH], [Path to the modules directory (default: $eff_libdir/freehttpd/modules)])],
-            [FHTTPD_MODULE_PATH="$withval"],
-            [FHTTPD_MODULE_PATH="$eff_libdir/freehttpd/modules"])
-
-# Module options
-m4_define([AVAILABLE_MODULES], [[http1x]])
-
-available_modules="m4_foreach([mod], [AVAILABLE_MODULES], [mod` `])"
-enabled_modules=""
-
-AC_ARG_ENABLE([mod-all],
-            [AS_HELP_STRING([--enable-mod-all], [Enable all available modules (default: no).])],
-            [enable_mod_all=yes],
-            [enable_mod_all=no])
-
-m4_foreach([name], [AVAILABLE_MODULES], [
-	AC_ARG_ENABLE([mod-]name,
-            [AS_HELP_STRING([--enable-mod-]name, [Enable the mod_]name[ module (default: no).])],
-            [enable_mod_]name[=yes],
-            [enable_mod_]name[=no])
-])
-
-# Option processing
-test "$enable_maintainer_mode" = "yes" && CFLAGS="-Wall -Wextra -Wpedantic -std=gnu11 $CFLAGS"
-AC_SUBST([FHTTPD_MODULE_PATH])
-AM_CONDITIONAL([BUILD_DOC], [test "$enable_doc" = "yes"])
-
-AC_MSG_CHECKING([whether to enable debug mode])
-AS_IF([test "x$build_type" = "xdebug"], [
-    AC_MSG_RESULT([yes])
-    CONCAT_SPACED_STRING([CFLAGS], [-g])
-    CONCAT_SPACED_STRING([LDFLAGS], [-g])
-], [
-    AC_MSG_RESULT([no])
-	CONCAT_SPACED_STRING([CPPFLAGS], [-DNDEBUG])
-])
-
-# Target check
-case "$target" in
-    *darwin*) darwin=1; ;;
-	*) darwin=0; ;;
-esac
-
-AM_CONDITIONAL([PLAT_DARWIN], [test "$darwin" = "1"])
-
-# Checks for programs.
+dnl Checks for programs.
 AC_PROG_CC
-AC_PROG_CPP
+AC_PROG_GREP
 AM_PROG_AR
-AC_PROG_LN_S
-AC_PROG_MKDIR_P
-AC_PROG_EGREP
-CHECK_PROG_GPG
+AC_PROG_RANLIB
 
-AS_IF([test "$enable_doc" = "yes"], [
-    CHECK_PROG_EMACS
-], [])
+dnl Checks for libraries.
 
-LT_INIT
+dnl Checks for header files.
 
-# Checks for libraries.
-AC_CHECK_LIB([dl], [dlopen], [have_libdl=yes], [
-	AC_MSG_ERROR([libdl is required for loading dynamic modules])
-])
+dnl Checks for typedefs, structures, and compiler characteristics.
 
-# Define macros
-AC_MSG_CHECKING([for effective module library extension])
-
-case "$target" in
-	*darwin*) shared_library_ext="so" ;;
-	*cygwin*|*mingw*) shared_library_ext="dll" ;;
-	*) shared_library_ext="so" ;;
-esac
-
-AC_MSG_RESULT([$shared_library_ext])
-AC_DEFINE_UNQUOTED([SHARED_LIBRARY_EXTENSION], ["$shared_library_ext"], [The extension shared libraries use on this platform])
-AC_DEFINE_UNQUOTED([FH_MODULE_PATH], ["$FHTTPD_MODULE_PATH"], [The module path to use])
-
-# Checks for header files.
-AC_HEADER_SYS_WAIT
-AC_CHECK_HEADER_STDBOOL
-AC_CHECK_HEADERS([arpa/inet.h fcntl.h netinet/in.h sys/socket.h sys/time.h])
-
-# Checks for typedefs, structures, and compiler characteristics.
-CC_CHECK_VLA_SUPPORT
-CCLD_CHECK_RDYNAMIC_SUPPORT
-
-AC_C_INLINE
-AC_C_CONST
-AC_C_RESTRICT
-
-AC_TYPE_PID_T
-AC_TYPE_SIZE_T
-AC_TYPE_SSIZE_T
-AC_TYPE_UINT16_T
-AC_TYPE_UINT32_T
-AC_TYPE_UINT64_T
-AC_TYPE_UINT8_T
-AC_STRUCT_TM
-
-# Checks for library functions.
-AC_FUNC_FORK
-AC_FUNC_MALLOC
-AC_FUNC_LSTAT_FOLLOWS_SLASHED_SYMLINK
-AC_FUNC_MALLOC
-AC_FUNC_REALLOC
-AC_FUNC_STRTOD
-AC_CHECK_FUNCS([atexit clock_gettime gettimeofday memchr memmove memset socket strcasecmp strdup strerror strndup strrchr strtoull])
-AC_CHECK_FUNCS([realpath strchr strncasecmp strtoul getopt_long])
-AC_CHECK_FUNCS([getcwd accept4])
-
-# Enable modules
-m4_foreach([name], [AVAILABLE_MODULES], [
-	AM_CONDITIONAL([ENABLE_MOD_]m4_toupper(name), [test "x$enable_mod_]name[" = "xyes" || test "x$enable_mod_all" = "xyes"])
-
-	AS_IF([test "x$enable_mod_]name[" = "xyes" || test "x$enable_mod_all" = "xyes"], [
-		CONCAT_SPACED_STRING([enabled_modules], [mod_]name)
-		AC_MSG_NOTICE([enabling module: mod_]name)
-	])
-])
+dnl Checks for library functions.
 
 AC_CONFIG_FILES([Makefile
-                 doc/Makefile
-                 res/Makefile
                  src/Makefile
-                 src/include/Makefile
                  src/core/Makefile
-                 src/hash/Makefile
-                 src/mm/Makefile
-                 src/log/Makefile
-                 src/server/Makefile
-                 src/utils/Makefile
-                 src/modules/Makefile
-                 tests/Makefile])
+                 src/progs/Makefile])
 AC_OUTPUT
 PRINT_SUMMARY

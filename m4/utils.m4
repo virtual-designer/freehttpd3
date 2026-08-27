@@ -25,18 +25,11 @@ AC_DEFUN([PRINT_SUMMARY], [
   Host:                      $host
   Build type:                $build_type
   Compiler:                  $CC
-  Preprocessor:              $CPP
-  Linker:                    $LD
   Compiler flags:            $CFLAGS
   Linker flags:              $LDFLAGS
   Preprocessor flags:        $CPPFLAGS
   Libraries:                 $LIBS
   Installation prefix:       $prefix
-  Main configuration file:   $FHTTPD_MAIN_CONFIG_FILE
-  Module path:               $FHTTPD_MODULE_PATH
-  Optional systemd support:  $enable_systemd
-  Optional modules:          $enabled_modules
-  Optimizations:             $enable_optimizations
 	])
 ])
 

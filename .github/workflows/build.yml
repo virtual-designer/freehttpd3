@@ -37,7 +37,7 @@ jobs:
       - name: Build
         run: |
           ./bootstrap
-          ./configure --prefix=$(pwd)/build --disable-silent-rules --enable-debug --enable-mod-all
+          ./configure --prefix=$(pwd)/build --disable-silent-rules
           make -j$(nproc)
           make install
 
@@ -46,14 +46,14 @@ jobs:
           make distcheck
           rm -rf freehttpd-*/ *.tar.*
 
-      - name: Benchmark
-        run: |
-          make check-benchmark || (tail -n100 tests/freehttpd.log && exit 1)
+      # - name: Benchmark
+      #   run: |
+      #     make check-benchmark || (tail -n100 tests/freehttpd.log && exit 1)
 
-      - name: Valgrind Benchmark
-        run: |
-          make check-valgrind-benchmark || (tail -n100 tests/freehttpd-valgrind.log && exit 1)
-        if: matrix.os == 'ubuntu-latest'
+      # - name: Valgrind Benchmark
+      #   run: |
+      #     make check-valgrind-benchmark || (tail -n100 tests/freehttpd-valgrind.log && exit 1)
+      #   if: matrix.os == 'ubuntu-latest'
 
       - name: Upload Artifacts
         id: upload
