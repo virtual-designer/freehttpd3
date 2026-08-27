@@ -36,9 +36,12 @@ dnl Checks for typedefs, structures, and compiler characteristics.
 
 dnl Checks for library functions.
 
+CONCAT_SPACED_STRING([CPPFLAGS], [-I\$(top_srcdir)/src])
+
 AC_CONFIG_FILES([Makefile
                  src/Makefile
                  src/core/Makefile
+                 src/utils/Makefile
                  src/progs/Makefile])
 AC_OUTPUT
 PRINT_SUMMARY
