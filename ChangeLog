@@ -1,5 +1,13 @@
 28-08-2026  Ar Rakin <rakinar2@osndevs.org>
 
+     [*] merge: branch 'main' of github.com:virtual-designer/freehttpd3
+         
+
+     [*] fix(hash): implementation issues
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
      [*] fix: add missing includes
          
          Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
@@ -18,6 +26,13 @@
      [*] feat: add generic hash table implementation
          
          Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+28-08-2026  Conventional Release Action <rakinar2@onesoftnet.eu.org>
+
+     [*] release: v3.20.0 [skip ci]
+         
+         Signed-off-by: Conventional Release Action <rakinar2@onesoftnet.eu.org>
          
 
 27-08-2026  Ar Rakin <rakinar2@osndevs.org>
