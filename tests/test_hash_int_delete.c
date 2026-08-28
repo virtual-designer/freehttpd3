@@ -10,7 +10,7 @@
 int
 main (void)
 {
-    int_htable_t *table = int_htable_create (8, NULL);
+    int_htable_t *table = int_htable_create (8);
     CHECK (table != NULL);
 
     static char payload_a[] = "a";

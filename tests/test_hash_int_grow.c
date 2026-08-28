@@ -16,7 +16,7 @@ main (void)
 {
     /* Deliberately tiny so the table is forced through several
        doublings while inserting N entries. */
-    int_htable_t *table = int_htable_create (4, NULL);
+    int_htable_t *table = int_htable_create (4);
     CHECK (table != NULL);
 
     /* Keys are offset from 1 so none of them collide with the

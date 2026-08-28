@@ -28,13 +28,12 @@ struct HT_NAME (htable)
     size_t index_capacity;
     size_t entry_capacity;
     size_t deleted_count;
-    ht_data_free_cb_t data_free_cb;
 };
 
 htable_t *
-HT_NAME (htable_create) (size_t initial_cap, ht_data_free_cb_t data_free_cb)
+HT_NAME (htable_create) (size_t initial_cap)
 {
-    assert (initial_cap > 0);
+    assert (initial_cap >= 2);
 
     htable_t *table = malloc (sizeof (*table));
 
@@ -44,7 +43,6 @@ HT_NAME (htable_create) (size_t initial_cap, ht_data_free_cb_t data_free_cb)
     table->count = 0;
     table->deleted_count = 0;
     table->entry_next_insert = 0;
-    table->data_free_cb = data_free_cb;
     table->index_capacity = util_round_ceil2_ull (initial_cap);
     table->entry_capacity = (table->index_capacity * 3) / 4;
     table->index_list
@@ -91,9 +89,7 @@ HT_NAME (htable_rehash) (htable_t *table, uint32_t *new_index_list,
 
             if (idx_element == HT_EMPTY)
             {
-                if (insert_target_hash == UINT64_MAX)
-                    insert_target_hash = hash;
-
+                insert_target_hash = hash;
                 break;
             }
 
@@ -153,9 +149,10 @@ HT_NAME (htable_set) (htable_t *table, const HT_KEY_TYPE key, void *data)
 {
     if ((table->entry_next_insert >= table->entry_capacity
          || (table->count + table->deleted_count + 1) * 4
-                >= table->index_capacity * 3)
-        && !HT_NAME (htable_grow) (table))
-        return false;
+                >= table->index_capacity * 3))
+    {
+        HT_NAME (htable_grow) (table);
+    }
 
     const uint64_t mask = table->index_capacity - 1;
     uint64_t hash = HT_KEY_HASH_CB (key) & mask;
@@ -203,6 +200,8 @@ hash_loop_end:
     if (table->index_list[insert_target_hash] == HT_DELETED)
         table->deleted_count--;
 
+    /* TODO: Use a free-list for next insert indexes, since delete can reclaim
+     * indexes. */
     const uint32_t idx = table->entry_next_insert++;
 
     table->index_list[insert_target_hash] = idx + 1;
@@ -295,6 +294,7 @@ HT_NAME (htable_delete_with_flag) (htable_t *table, const HT_KEY_TYPE key,
 
                     if (HT_KEY_EQUAL_CB (entry->key, key))
                     {
+                        HT_KEY_FREE_CB(entry->key);
                         table->index_list[hash] = HT_DELETED;
                         table->deleted_count++;
                         table->count--;
@@ -327,7 +327,8 @@ HT_NAME (htable_count) (const htable_t *table)
 }
 
 void
-HT_NAME (htable_free) (htable_t *table)
+HT_NAME (htable_free_with_cleanup) (htable_t *table,
+                                    ht_data_free_cb_t data_free_cb)
 {
     for (size_t i = 0; i < table->index_capacity; i++)
     {
@@ -339,13 +340,19 @@ HT_NAME (htable_free) (htable_t *table)
         ht_entry_t *entry = &table->entries[idx_element - 1];
         HT_KEY_FREE_CB (entry->key);
 
-        if (table->data_free_cb)
-            table->data_free_cb (entry->data);
+        if (data_free_cb)
+            data_free_cb (entry->data);
     }
 
     free (table->index_list);
     free (table->entries);
     free (table);
+}
+
+void
+HT_NAME (htable_free) (htable_t *table)
+{
+    HT_NAME (htable_free_with_cleanup) (table, NULL);
 }
 
 #undef htable_t

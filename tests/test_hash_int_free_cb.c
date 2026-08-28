@@ -27,7 +27,7 @@ main (void)
 {
     memset (free_counts, 0, sizeof (free_counts));
 
-    int_htable_t *table = int_htable_create (8, on_free);
+    int_htable_t *table = int_htable_create (8);
     CHECK (table != NULL);
 
     for (int i = 0; i < M; i++)
@@ -39,7 +39,7 @@ main (void)
     for (int i = 0; i < M; i += 2)
         CHECK (int_htable_delete (table, (uint64_t) i) == &free_counts[i]);
 
-    int_htable_free (table);
+    int_htable_free_with_cleanup (table, &on_free);
 
     for (int i = 0; i < M; i++)
     {
@@ -55,7 +55,7 @@ main (void)
     }
 
     /* A NULL data_free_cb must be tolerated (no crash on free). */
-    int_htable_t *table2 = int_htable_create (4, NULL);
+    int_htable_t *table2 = int_htable_create (4);
     CHECK (table2 != NULL);
     CHECK (int_htable_set (table2, 1, &free_counts[0]));
     int_htable_free (table2);

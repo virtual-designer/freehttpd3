@@ -28,6 +28,7 @@ AC_PROG_GREP
 AM_PROG_AR
 AC_PROG_RANLIB
 AC_PATH_PROG([VALGRIND], [valgrind])
+AC_PATH_PROG([GPG], [gpg])
 
 dnl Checks for libraries.
 

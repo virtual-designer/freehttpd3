@@ -22,7 +22,7 @@
 int
 main (void)
 {
-    int_htable_t *table = int_htable_create (4, NULL);
+    int_htable_t *table = int_htable_create (4);
     CHECK (table != NULL);
 
     for (int cycle = 0; cycle < CYCLES; cycle++)

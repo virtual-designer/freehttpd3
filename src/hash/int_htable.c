@@ -5,21 +5,17 @@
 #define HT_IMPLEMENTATION
 #include "int_htable.h"
 
+/* FNV-1a */
 static uint64_t
 int_htable_key_hash (uint64_t key)
 {
-    const uint64_t FNV_OFFSET_BASIS = 0xcbf29ce484222325;
-    const uint64_t FNV_PRIME = 0x100000001b3;
-    uint64_t hash = FNV_OFFSET_BASIS;
+    uint64_t hash = key;
 
-    const uint64_t ull_key = (uint64_t) key;
-    const unsigned char *data = (const unsigned char *) &ull_key;
-
-    for (size_t i = 0; i < sizeof (ull_key); i++)
-    {
-        hash ^= data[i];
-        hash *= FNV_PRIME;
-    }
+    hash ^= hash >> 30;
+    hash *= 0xbf58476d1ce4e5b9ULL;
+    hash ^= hash >> 27;
+    hash *= 0x94d049bb133111ebULL;
+    hash ^= hash >> 31;
 
     return hash;
 }
