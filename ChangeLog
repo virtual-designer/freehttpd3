@@ -1,3 +1,44 @@
+28-08-2026  Ar Rakin <rakinar2@osndevs.org>
+
+     [*] fix: add missing includes
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+     [*] chore: update tests/.gitignore
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+     [*] chore: add .gitignore
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+     [*] feat: add generic hash table implementation
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+27-08-2026  Ar Rakin <rakinar2@osndevs.org>
+
+     [*] feat: basic server skeleton
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+     [*] feat\!: rewrite
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+13-03-2026  Conventional Release Action <rakinar2@onesoftnet.eu.org>
+
+     [*] release: v3.18.0 [skip ci]
+         
+         Signed-off-by: Conventional Release Action <rakinar2@onesoftnet.eu.org>
+         
+
 13-03-2026  Ar Rakin <rakinar2@osndevs.org>
 
      [*] feat(server): basic router and radix tree implementation
