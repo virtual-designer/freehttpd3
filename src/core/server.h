@@ -1,6 +1,7 @@
 #ifndef FHTTPD_SERVER_H
 #define FHTTPD_SERVER_H
 
+#include <stdbool.h>
 #include "config.h"
 
 struct fh_server;
