@@ -3,5 +3,3 @@ test_hash_int_delete
 test_hash_int_grow
 test_hash_int_free_cb
 test_hash_int_churn
-
-vgcore.*
