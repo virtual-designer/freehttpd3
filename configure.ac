@@ -17,7 +17,7 @@ AC_CONFIG_MACRO_DIR([m4])
 AC_CANONICAL_TARGET
 AC_CANONICAL_HOST
 
-AM_INIT_AUTOMAKE([-Wall gnu 1.11 info-in-builddir subdir-objects dist-xz dist-bzip2])
+AM_INIT_AUTOMAKE([-Wall gnu 1.11 info-in-builddir subdir-objects dist-xz dist-bzip2 parallel-tests])
 AM_SILENT_RULES([yes])
 
 AC_SUBST([VERSION], FHTTPD_VERSION)
@@ -27,6 +27,7 @@ AC_PROG_CC
 AC_PROG_GREP
 AM_PROG_AR
 AC_PROG_RANLIB
+AC_PATH_PROG([VALGRIND], [valgrind])
 
 dnl Checks for libraries.
 
@@ -41,7 +42,9 @@ CONCAT_SPACED_STRING([CPPFLAGS], [-I\$(top_srcdir)/src])
 AC_CONFIG_FILES([Makefile
                  src/Makefile
                  src/core/Makefile
+                 src/hash/Makefile
                  src/utils/Makefile
-                 src/progs/Makefile])
+                 src/progs/Makefile
+                 tests/Makefile])
 AC_OUTPUT
 PRINT_SUMMARY

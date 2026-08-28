@@ -1,1 +1,1 @@
-SUBDIRS = core utils progs
+SUBDIRS = core utils hash progs

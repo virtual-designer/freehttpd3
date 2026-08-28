@@ -86,7 +86,7 @@ main (int argc, char **argv)
 
     if (!server)
     {
-        perror("Unable to create server");
+        perror ("Unable to create server");
         return EXIT_FAILURE;
     }
 
