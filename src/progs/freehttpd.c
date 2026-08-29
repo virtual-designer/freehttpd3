@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define FH_LOG_MODULE_NAME "main"
+
 #include "core/server.h"
 #include "log/log.h"
 
@@ -15,7 +17,6 @@ static struct option const long_options[] = {
 };
 
 static const char *short_options = "hV";
-
 static const char *argv0 = NULL;
 
 static void
@@ -48,11 +49,6 @@ main (int argc, char **argv)
 {
     argv0 = argv[0];
 
-    for (int i = 0; i < 10; i++) {
-        sleep(2);
-        fh_pr_info ("Hello world!");
-    }
-
     for (;;)
     {
         int longind = 0;
@@ -76,7 +72,7 @@ main (int argc, char **argv)
         }
     }
 
-    struct fh_config config = {
+    const struct fh_config config = {
         .vhost_count = 1,
         .vhosts = & (struct fh_config_vhost) {
             .id_count = 1,
