@@ -61,6 +61,9 @@ test_hash_str_iterate_delete_SOURCES = test_hash_str_iterate_delete.c test-commo
 
 VALGRIND_WRAPPER = $(top_srcdir)/build-aux/valgrind
 
+clean-local:
+	$(RM) -f vgcore.*
+
 check-valgrind:
 	@if test -z "$(VALGRIND)"; then \
 	    echo "valgrind not found; install it to use this target" >&2; \
