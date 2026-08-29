@@ -1,5 +1,7 @@
 struct HT_NAME (htable);
+struct HT_NAME (ht_entry);
 typedef struct HT_NAME (htable) HT_NAME (htable_t);
+typedef struct HT_NAME (ht_entry) HT_NAME (ht_entry_t);
 struct HT_NAME (htable)
     * HT_NAME (htable_create) (size_t initial_cap);
 void *HT_NAME (htable_get) (const struct HT_NAME (htable) * table,

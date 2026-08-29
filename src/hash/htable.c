@@ -13,26 +13,6 @@
 #define htable_t struct HT_NAME (htable)
 #define ht_entry_t struct HT_NAME (ht_entry)
 
-struct HT_NAME (ht_entry)
-{
-    HT_KEY_TYPE key;
-    void *data;
-    uint64_t cached_hash;
-};
-
-struct HT_NAME (htable)
-{
-    ht_entry_t *entries;
-    uint32_t *index_list;
-    uint32_t *deleted_index_list;
-    size_t count;
-    uint32_t entry_next_insert;
-    size_t index_capacity;
-    size_t entry_capacity;
-    size_t deleted_count;
-    size_t deleted_capacity;
-};
-
 htable_t *
 HT_NAME (htable_create) (size_t initial_cap)
 {
@@ -48,6 +28,8 @@ HT_NAME (htable_create) (size_t initial_cap)
     table->deleted_index_list = NULL;
     table->deleted_capacity = 0;
     table->deleted_count = 0;
+    table->head_idx = UINT32_MAX;
+    table->tail_idx = UINT32_MAX;
     table->index_capacity = util_round_ceil2_ull (initial_cap);
     table->entry_capacity = (table->index_capacity * 3) / 4;
     table->index_list
@@ -78,6 +60,7 @@ HT_NAME (htable_rehash) (htable_t *table, uint32_t *new_index_list,
 {
     const uint64_t mask = new_index_capacity - 1;
     uint32_t new_idx_counter = 0;
+    uint32_t head_idx = UINT32_MAX, tail_idx = UINT32_MAX;
 
     for (size_t i = 0; i < table->index_capacity; i++)
     {
@@ -92,6 +75,20 @@ HT_NAME (htable_rehash) (htable_t *table, uint32_t *new_index_list,
         uint64_t insert_target_hash = UINT64_MAX;
 
         new_entries[new_idx] = *prev_entry;
+
+        if (tail_idx == UINT32_MAX)
+        {
+            head_idx = tail_idx = new_idx;
+            new_entries[new_idx].prev_idx = new_entries[new_idx].next_idx
+                = UINT32_MAX;
+        }
+        else
+        {
+            new_entries[tail_idx].next_idx = new_idx;
+            new_entries[new_idx].prev_idx = tail_idx;
+            new_entries[new_idx].next_idx = UINT32_MAX;
+            tail_idx = new_idx;
+        }
 
         for (size_t n = 0; n < new_index_capacity; n++)
         {
@@ -114,6 +111,8 @@ HT_NAME (htable_rehash) (htable_t *table, uint32_t *new_index_list,
 
     table->entry_next_insert = new_idx_counter;
     table->deleted_count = 0;
+    table->head_idx = head_idx;
+    table->tail_idx = tail_idx;
 
     return true;
 }
@@ -248,8 +247,22 @@ hash_loop_end:
     table->entries[idx].key = dup_key;
     table->entries[idx].data = data;
     table->entries[idx].cached_hash = raw_hash;
-    table->count++;
 
+    if (table->tail_idx == UINT32_MAX)
+    {
+        table->head_idx = table->tail_idx = idx;
+        table->entries[idx].prev_idx = table->entries[idx].next_idx
+            = UINT32_MAX;
+    }
+    else
+    {
+        table->entries[table->tail_idx].next_idx = idx;
+        table->entries[idx].prev_idx = table->tail_idx;
+        table->entries[idx].next_idx = UINT32_MAX;
+        table->tail_idx = idx;
+    }
+
+    table->count++;
     return true;
 }
 
@@ -331,7 +344,8 @@ HT_NAME (htable_delete_with_flag) (htable_t *table, const HT_KEY_TYPE key,
 
             default:
                 {
-                    const ht_entry_t *entry = &table->entries[idx_element - 1];
+                    const uint32_t idx = idx_element - 1;
+                    const ht_entry_t *entry = &table->entries[idx];
 
                     if (HT_KEY_EQUAL_CB (entry->key, key))
                     {
@@ -360,6 +374,20 @@ HT_NAME (htable_delete_with_flag) (htable_t *table, const HT_KEY_TYPE key,
                         HT_KEY_FREE_CB (entry->key);
                         table->deleted_index_list[table->deleted_count++]
                             = idx_element - 1;
+
+                        if (idx == table->head_idx)
+                            table->head_idx = table->entries[idx].next_idx;
+
+                        if (idx == table->tail_idx)
+                            table->tail_idx = table->entries[idx].prev_idx;
+
+                        if (table->entries[idx].next_idx != UINT32_MAX)
+                            table->entries[table->entries[idx].next_idx]
+                                .prev_idx = table->entries[idx].prev_idx;
+
+                        if (table->entries[idx].prev_idx != UINT32_MAX)
+                            table->entries[table->entries[idx].prev_idx]
+                                .next_idx = table->entries[idx].next_idx;
 
                         table->index_list[hash] = HT_DELETED;
                         table->count--;
@@ -395,6 +423,7 @@ void
 HT_NAME (htable_free_with_cleanup) (htable_t *table,
                                     ht_data_free_cb_t data_free_cb)
 {
+    /* TODO: Use list for iteration. */
     for (size_t i = 0; i < table->index_capacity; i++)
     {
         const uint32_t idx_element = table->index_list[i];

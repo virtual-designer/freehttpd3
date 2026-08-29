@@ -73,14 +73,38 @@ main (int argc, char **argv)
     }
 
     const struct fh_config config = {
-        .vhost_count = 1,
-        .vhosts = & (struct fh_config_vhost) {
-            .id_count = 1,
-            .id_list = & (struct fh_config_vhost_id) {
-                .hostname = "localhost",
-                .port = 8080,
+        .vhost_count = 2,
+        .vhosts = (struct fh_config_vhost []) {
+            {
+                .id_count = 1,
+                .id_list = (struct fh_config_vhost_id []) {
+                    { 
+                        .hostname = "localhost",
+                        .port = 8080,
+                    },
+                },
+                .docroot = "/var/www/html",
             },
-            .docroot = "/var/www/html",
+            {
+                .id_count = 1,
+                .id_list = (struct fh_config_vhost_id[]) {
+                    { 
+                        .hostname = "localhost",
+                        .port = 8443,
+                    },
+                },
+                .docroot = "/var/www/html",
+            },
+            {
+                .id_count = 1,
+                .id_list = (struct fh_config_vhost_id[]) {
+                    { 
+                        .hostname = "example.com",
+                        .port = 8443,
+                    },
+                },
+                .docroot = "/var/www/html",
+            }
         },
     };
 

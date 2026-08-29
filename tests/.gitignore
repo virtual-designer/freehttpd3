@@ -4,6 +4,8 @@ test_hash_int_grow
 test_hash_int_free_cb
 test_hash_int_churn
 test_hash_int_min_capacity
+test_hash_int_iterate
+test_hash_int_iterate_delete
 test_hash_str_basic
 test_hash_str_delete
 test_hash_str_grow
@@ -11,3 +13,5 @@ test_hash_str_free_cb
 test_hash_str_churn
 test_hash_str_ownership
 test_hash_str_min_capacity
+test_hash_str_iterate
+test_hash_str_iterate_delete

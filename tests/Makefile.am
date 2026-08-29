@@ -26,13 +26,17 @@ check_PROGRAMS = \
     test_hash_int_free_cb \
     test_hash_int_churn \
     test_hash_int_min_capacity \
+    test_hash_int_iterate \
+    test_hash_int_iterate_delete \
     test_hash_str_basic \
     test_hash_str_delete \
     test_hash_str_grow \
     test_hash_str_free_cb \
     test_hash_str_churn \
     test_hash_str_ownership \
-    test_hash_str_min_capacity
+    test_hash_str_min_capacity \
+    test_hash_str_iterate \
+    test_hash_str_iterate_delete
 
 TESTS = $(check_PROGRAMS)
 
@@ -42,6 +46,8 @@ test_hash_int_grow_SOURCES = test_hash_int_grow.c test-common.h $(HASH_SOURCES)
 test_hash_int_free_cb_SOURCES = test_hash_int_free_cb.c test-common.h $(HASH_SOURCES)
 test_hash_int_churn_SOURCES = test_hash_int_churn.c test-common.h $(HASH_SOURCES)
 test_hash_int_min_capacity_SOURCES = test_hash_int_min_capacity.c test-common.h $(HASH_SOURCES)
+test_hash_int_iterate_SOURCES = test_hash_int_iterate.c test-common.h $(HASH_SOURCES)
+test_hash_int_iterate_delete_SOURCES = test_hash_int_iterate_delete.c test-common.h $(HASH_SOURCES)
 
 test_hash_str_basic_SOURCES = test_hash_str_basic.c test-common.h $(STR_HASH_SOURCES)
 test_hash_str_delete_SOURCES = test_hash_str_delete.c test-common.h $(STR_HASH_SOURCES)
@@ -50,6 +56,8 @@ test_hash_str_free_cb_SOURCES = test_hash_str_free_cb.c test-common.h $(STR_HASH
 test_hash_str_churn_SOURCES = test_hash_str_churn.c test-common.h $(STR_HASH_SOURCES)
 test_hash_str_ownership_SOURCES = test_hash_str_ownership.c test-common.h $(STR_HASH_SOURCES)
 test_hash_str_min_capacity_SOURCES = test_hash_str_min_capacity.c test-common.h $(STR_HASH_SOURCES)
+test_hash_str_iterate_SOURCES = test_hash_str_iterate.c test-common.h $(STR_HASH_SOURCES)
+test_hash_str_iterate_delete_SOURCES = test_hash_str_iterate_delete.c test-common.h $(STR_HASH_SOURCES)
 
 VALGRIND_WRAPPER = $(top_srcdir)/build-aux/valgrind
 
