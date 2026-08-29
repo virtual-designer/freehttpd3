@@ -3,6 +3,7 @@
 #include <stdlib.h>
 
 #include "core/server.h"
+#include "log/log.h"
 
 #ifdef HAVE_CONFIG_H
 #    include "config.h"
@@ -46,6 +47,11 @@ int
 main (int argc, char **argv)
 {
     argv0 = argv[0];
+
+    for (int i = 0; i < 10; i++) {
+        sleep(2);
+        fh_pr_info ("Hello world!");
+    }
 
     for (;;)
     {

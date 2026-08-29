@@ -44,6 +44,7 @@ AC_CONFIG_FILES([Makefile
                  src/Makefile
                  src/core/Makefile
                  src/hash/Makefile
+                 src/log/Makefile
                  src/utils/Makefile
                  src/progs/Makefile
                  tests/Makefile])
