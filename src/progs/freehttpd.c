@@ -27,7 +27,7 @@ usage (void)
     fprintf (stdout, "\n");
     fprintf (stdout, "Options:\n");
     fprintf (stdout, "  -h, --help      Show this help and exit.\n");
-    fprintf (stdout, "  -V, ---version  Show version information.\n");
+    fprintf (stdout, "  -V, --version   Show version information.\n");
     fprintf (stdout, "\n");
     fprintf (stdout, "Bug reports and general messages can be sent\n");
     fprintf (stdout, "to <rakinar2@osndevs.org> directly.\n");
