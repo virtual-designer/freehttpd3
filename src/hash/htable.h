@@ -5,8 +5,6 @@ typedef void (*ht_data_free_cb_t) (void *);
 
 #endif /* FHTTPD_HTABLE_H */
 
-#define HT_ELEMENT(table, idx) (table)->entries[idx]
-
 #ifndef HT_PREFIX
 #    error "Please define HT_* macros"
 #endif

@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "htable.h"
 #include "utils/utils.h"
 
 #define HT_DELETED (UINT32_MAX)
