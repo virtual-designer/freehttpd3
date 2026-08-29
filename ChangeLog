@@ -1,3 +1,32 @@
+29-08-2026  Ar Rakin <rakinar2@onesoftnet.eu.org>
+
+     [*] feat: add str hash table
+         
+         Signed-off-by: Ar Rakin <rakinar2@onesoftnet.eu.org>
+         
+
+     [*] fix: hash table issues
+         
+         Signed-off-by: Ar Rakin <rakinar2@onesoftnet.eu.org>
+         
+
+     [*] fix: typos and spacing
+         
+         Signed-off-by: Ar Rakin <rakinar2@onesoftnet.eu.org>
+         
+
+28-08-2026  Conventional Release Action <rakinar2@onesoftnet.eu.org>
+
+     [*] release: v3.20.1 [skip ci]
+         
+         Signed-off-by: Conventional Release Action <rakinar2@onesoftnet.eu.org>
+         
+
+     [*] release: v3.20.0 [skip ci]
+         
+         Signed-off-by: Conventional Release Action <rakinar2@onesoftnet.eu.org>
+         
+
 28-08-2026  Ar Rakin <rakinar2@osndevs.org>
 
      [*] merge: branch 'main' of github.com:virtual-designer/freehttpd3
@@ -26,13 +55,6 @@
      [*] feat: add generic hash table implementation
          
          Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
-         
-
-28-08-2026  Conventional Release Action <rakinar2@onesoftnet.eu.org>
-
-     [*] release: v3.20.0 [skip ci]
-         
-         Signed-off-by: Conventional Release Action <rakinar2@onesoftnet.eu.org>
          
 
 27-08-2026  Ar Rakin <rakinar2@osndevs.org>
