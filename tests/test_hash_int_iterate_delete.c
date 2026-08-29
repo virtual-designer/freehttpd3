@@ -1,22 +1,7 @@
 /* Interaction between int_htable_foreach() and deletion: whether
    removing a middle entry, the head, the tail, every remaining
    entry, or a tombstoned-then-reinserted key leaves the iteration
-   list (head_idx/tail_idx/prev_idx/next_idx) correctly linked.
-
-   NOTE: as of this writing, deleting the head or the tail of a table
-   that has more than one live entry corrupts that bookkeeping. In
-   htable_delete_with_flag() (htable.c), the branch that relinks the
-   two neighbours of a removed node subscripts table->entries[] with
-   the removed node's own prev_idx/next_idx directly; for the head
-   (prev_idx == UINT32_MAX) or the tail (next_idx == UINT32_MAX) that
-   sentinel is used as an array index instead of being recognised as
-   "no neighbour on this side", and head_idx/tail_idx themselves are
-   never updated to the new head/tail either way. So the "head" and
-   "tail" and "drain" cases below are expected to crash the whole
-   test binary rather than fail a single CHECK, until that is fixed
-   -- they are written for the correct behaviour, not today's. The
-   "middle" and "reuse" cases do not hit that branch and are expected
-   to pass right now. */
+   list (head_idx/tail_idx/prev_idx/next_idx) correctly linked. */
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -51,8 +36,7 @@ int
 main (void)
 {
     /* Deleting a middle entry: the relink branch for two live
-       neighbours does not touch head_idx/tail_idx and is correct
-       today. */
+       neighbours does not touch head_idx/tail_idx. */
     {
         int_htable_t *table = int_htable_create (8);
         CHECK (table != NULL);
@@ -72,9 +56,7 @@ main (void)
     }
 
     /* A tombstoned slot reused by a later insert must be re-appended
-       at the new tail, not resurrected in its old position. Deleting
-       the reused (middle) slot does not hit the head/tail bug
-       either. */
+       at the new tail, not resurrected in its old position. */
     {
         int_htable_t *table = int_htable_create (8);
         CHECK (table != NULL);
@@ -123,10 +105,10 @@ main (void)
 
     /* Deleting the tail of a multi-entry table, then inserting a
        fresh key, so a stale tail_idx cannot hide behind a single
-       lucky pass: if tail_idx still points at the removed node,
-       htable_set()'s append-at-tail logic links the new entry onto a
-       dead node instead of the real (new) tail, orphaning it from
-       iteration even though it stays reachable via get(). */
+       lucky pass: if tail_idx still pointed at the removed node,
+       htable_set()'s append-at-tail logic would link the new entry
+       onto a dead node instead of the real (new) tail, orphaning it
+       from iteration even though it stays reachable via get(). */
     {
         int_htable_t *table = int_htable_create (8);
         CHECK (table != NULL);
@@ -154,8 +136,7 @@ main (void)
 
     /* Deleting every entry from the head, one at a time, must drain
        the list to empty -- also exercises the single-remaining-entry
-       case (head_idx == tail_idx), which is handled correctly
-       today. */
+       case (head_idx == tail_idx). */
     {
         int_htable_t *table = int_htable_create (8);
         CHECK (table != NULL);

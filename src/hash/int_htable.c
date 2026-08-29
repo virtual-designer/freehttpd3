@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#define HT_IMPLEMENTATION
+#define HT_LOCAL_IMPLEMENTATION
 #include "int_htable.h"
 
 /* SplitMix64 finalizer */

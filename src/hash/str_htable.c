@@ -4,7 +4,7 @@
 
 #include "rapidhash.h"
 
-#define HT_IMPLEMENTATION
+#define HT_LOCAL_IMPLEMENTATION
 #include "str_htable.h"
 
 static inline uint64_t

@@ -1,10 +1,5 @@
 /* Interaction between str_htable_foreach() and deletion -- string-
-   keyed counterpart of test_hash_int_iterate_delete.c. See that
-   file's header for why the "head", "tail", and "drain" cases below
-   are expected to crash the whole test binary rather than fail a
-   single CHECK against the current htable_delete_with_flag() in
-   htable.c, while "middle" and "reuse" are expected to pass right
-   now. */
+   keyed counterpart of test_hash_int_iterate_delete.c. */
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -52,8 +47,7 @@ main (void)
     char key[32];
 
     /* Deleting a middle entry: the relink branch for two live
-       neighbours does not touch head_idx/tail_idx and is correct
-       today. */
+       neighbours does not touch head_idx/tail_idx. */
     {
         str_htable_t *table = str_htable_create (8);
         CHECK (table != NULL);
@@ -136,10 +130,10 @@ main (void)
 
     /* Deleting the tail of a multi-entry table, then inserting a
        fresh key, so a stale tail_idx cannot hide behind a single
-       lucky pass: if tail_idx still points at the removed node,
-       htable_set()'s append-at-tail logic links the new entry onto a
-       dead node instead of the real (new) tail, orphaning it from
-       iteration even though it stays reachable via get(). */
+       lucky pass: if tail_idx still pointed at the removed node,
+       htable_set()'s append-at-tail logic would link the new entry
+       onto a dead node instead of the real (new) tail, orphaning it
+       from iteration even though it stays reachable via get(). */
     {
         str_htable_t *table = str_htable_create (8);
         CHECK (table != NULL);
@@ -172,8 +166,7 @@ main (void)
 
     /* Deleting every entry from the head, one at a time, must drain
        the list to empty -- also exercises the single-remaining-entry
-       case (head_idx == tail_idx), which is handled correctly
-       today. */
+       case (head_idx == tail_idx). */
     {
         str_htable_t *table = str_htable_create (8);
         CHECK (table != NULL);
