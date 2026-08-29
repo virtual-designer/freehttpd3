@@ -8,8 +8,8 @@ void *HT_NAME (htable_get_with_flag) (const struct HT_NAME (htable) * table,
                                       const HT_KEY_TYPE key, bool *flag);
 bool HT_NAME (htable_has) (const struct HT_NAME (htable) * table,
                            const HT_KEY_TYPE key);
-bool HT_NAME (htable_set) (struct HT_NAME (htable) * table, HT_KEY_TYPE key,
-                           void *data);
+bool HT_NAME (htable_set) (struct HT_NAME (htable) * table,
+                           const HT_KEY_TYPE key, void *data);
 size_t HT_NAME (htable_count) (const struct HT_NAME (htable) * table);
 void *HT_NAME (htable_delete_with_flag) (struct HT_NAME (htable) * table,
                                          const HT_KEY_TYPE key, bool *flag);

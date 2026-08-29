@@ -8,8 +8,8 @@
 #define HT_PREFIX int_
 #define HT_KEY_TYPE uint64_t
 #define HT_KEY_HASH_CB int_htable_key_hash
-#define HT_KEY_EQUAL_CB int_htable_key_equal
-#define HT_KEY_DUP_CB int_htable_key_dup
+#define HT_KEY_EQUAL_CB(key1, key2) ((key1) == (key2))
+#define HT_KEY_DUP_CB(key) (key)
 #define HT_KEY_FREE_CB(key)
 #define HT_KEY_DUP_CHECK(key)
 

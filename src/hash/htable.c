@@ -17,6 +17,7 @@ struct HT_NAME (ht_entry)
 {
     HT_KEY_TYPE key;
     void *data;
+    uint64_t cached_hash;
 };
 
 struct HT_NAME (htable)
@@ -87,7 +88,7 @@ HT_NAME (htable_rehash) (htable_t *table, uint32_t *new_index_list,
         const uint32_t idx = table->index_list[i] - 1;
         const uint32_t new_idx = new_idx_counter++;
         const ht_entry_t *prev_entry = &table->entries[idx];
-        uint64_t hash = HT_KEY_HASH_CB (prev_entry->key) & mask;
+        uint64_t hash = prev_entry->cached_hash & mask;
         uint64_t insert_target_hash = UINT64_MAX;
 
         new_entries[new_idx] = *prev_entry;
@@ -170,8 +171,11 @@ HT_NAME (htable_set) (htable_t *table, const HT_KEY_TYPE key, void *data)
         return false;
     }
 
+    assert (table->entry_next_insert < table->entry_capacity);
+
     const uint64_t mask = table->index_capacity - 1;
-    uint64_t hash = HT_KEY_HASH_CB (key) & mask;
+    const uint64_t raw_hash = HT_KEY_HASH_CB (key);
+    uint64_t hash = raw_hash & mask;
     uint64_t insert_target_hash = UINT64_MAX;
 
     for (size_t n = 0; n < table->index_capacity; n++)
@@ -243,6 +247,7 @@ hash_loop_end:
     table->index_list[insert_target_hash] = idx + 1;
     table->entries[idx].key = dup_key;
     table->entries[idx].data = data;
+    table->entries[idx].cached_hash = raw_hash;
     table->count++;
 
     return true;
