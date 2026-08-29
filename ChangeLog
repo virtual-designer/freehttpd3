@@ -1,4 +1,41 @@
+29-08-2026  Ar Rakin <rakinar2@osndevs.org>
+
+     [*] fix: double inclusion
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+     [*] fix: header inclusion issues
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+     [*] chore: auto clean vgcore files
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+     [*] feat(hash): iteration of htables
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+     [*] feat(server): use htables
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+     [*] feat: logger improved
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
 29-08-2026  Ar Rakin <rakinar2@onesoftnet.eu.org>
+
+     [*] feat: logging
+         
+         Signed-off-by: Ar Rakin <rakinar2@onesoftnet.eu.org>
+         
 
      [*] feat: add str hash table
          
@@ -13,6 +50,13 @@
      [*] fix: typos and spacing
          
          Signed-off-by: Ar Rakin <rakinar2@onesoftnet.eu.org>
+         
+
+29-08-2026  Conventional Release Action <rakinar2@onesoftnet.eu.org>
+
+     [*] release: v3.21.2 [skip ci]
+         
+         Signed-off-by: Conventional Release Action <rakinar2@onesoftnet.eu.org>
          
 
 28-08-2026  Conventional Release Action <rakinar2@onesoftnet.eu.org>
