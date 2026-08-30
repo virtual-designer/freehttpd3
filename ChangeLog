@@ -1,3 +1,27 @@
+30-08-2026  Ar Rakin <rakinar2@osndevs.org>
+
+     [*] feat(htable): use entry list during cleanup
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+     [*] refactor: add explicit asserts and comments
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+29-08-2026  Conventional Release Action <rakinar2@onesoftnet.eu.org>
+
+     [*] release: v3.25.0 [skip ci]
+         
+         Signed-off-by: Conventional Release Action <rakinar2@onesoftnet.eu.org>
+         
+
+     [*] release: v3.21.2 [skip ci]
+         
+         Signed-off-by: Conventional Release Action <rakinar2@onesoftnet.eu.org>
+         
+
 29-08-2026  Ar Rakin <rakinar2@osndevs.org>
 
      [*] fix: double inclusion
@@ -50,13 +74,6 @@
      [*] fix: typos and spacing
          
          Signed-off-by: Ar Rakin <rakinar2@onesoftnet.eu.org>
-         
-
-29-08-2026  Conventional Release Action <rakinar2@onesoftnet.eu.org>
-
-     [*] release: v3.21.2 [skip ci]
-         
-         Signed-off-by: Conventional Release Action <rakinar2@onesoftnet.eu.org>
          
 
 28-08-2026  Conventional Release Action <rakinar2@onesoftnet.eu.org>
