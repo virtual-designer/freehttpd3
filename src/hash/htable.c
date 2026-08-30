@@ -66,7 +66,7 @@ HT_NAME (htable_rehash) (htable_t *table, uint32_t *new_index_list,
         if (table->index_list[i] == HT_EMPTY
             || table->index_list[i] == HT_DELETED)
             continue;
-        
+
         assert (new_idx_counter < new_entry_capacity);
 
         const uint32_t idx = table->index_list[i] - 1;
@@ -372,11 +372,12 @@ HT_NAME (htable_delete_with_flag) (htable_t *table, const HT_KEY_TYPE key,
                             table->deleted_capacity = new_deleted_capacity;
                         }
 
-                        /* The key is free'd, however we do not explicitly set it to a default
-                           value like NULL for example, nor do we set the data to NULL.  
-                           This is intentional, and fine for now since we do not arbitrarily read
+                        /* The key is free'd, however we do not explicitly set
+                           it to a default value like NULL for example, nor do
+                           we set the data to NULL. This is intentional, and
+                           fine for now since we do not arbitrarily read
                            entries. */
-                           
+
                         HT_KEY_FREE_CB (entry->key);
                         table->deleted_index_list[table->deleted_count++]
                             = idx_element - 1;
@@ -429,15 +430,10 @@ void
 HT_NAME (htable_free_with_cleanup) (htable_t *table,
                                     ht_data_free_cb_t data_free_cb)
 {
-    /* TODO: Use list for iteration. */
-    for (size_t i = 0; i < table->index_capacity; i++)
+    for (uint32_t idx = table->head_idx; idx != UINT32_MAX;
+         idx = table->entries[idx].next_idx)
     {
-        const uint32_t idx_element = table->index_list[i];
-
-        if (idx_element == HT_EMPTY || idx_element == HT_DELETED)
-            continue;
-
-        ht_entry_t *entry = &table->entries[idx_element - 1];
+        ht_entry_t *entry = &table->entries[idx];
         HT_KEY_FREE_CB (entry->key);
 
         if (data_free_cb)
