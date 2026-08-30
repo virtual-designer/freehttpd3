@@ -59,6 +59,16 @@ struct HT_NAME (htable)
     size_t deleted_capacity;
 };
 
+/* XXX: When the table is empty, head_idx is UINT32_MAX, but 
+   it.entry is never dereferenced outside loop body, so
+   pure pointer arithmetic during loop initialization does
+   not trigger a segfault, and the loop terminates early. 
+   However, it is important to note that the expression
+   entries + head_idx when head_idx is UINT32_MAX is actually
+   undefined behavior.  But the result of the pointer 
+   arithmetic is never used, so this is a hacky way to avoid
+   accessing entries directly until inside loop. */
+
 #    define ht_iter_begin(table)                                               \
         { .idx = (table)->head_idx,                                            \
           .entry = (table)->entries + (table)->head_idx }

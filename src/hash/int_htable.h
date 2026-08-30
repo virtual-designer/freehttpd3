@@ -27,7 +27,6 @@
 #    undef HT_KEY_DUP_CB
 #    undef HT_KEY_FREE_CB
 #    undef HT_KEY_DUP_CHECK
-#    undef HT_IMPLEMENTATION_ALREADY_DEFINED
 #endif /* HT_LOCAL_IMPLEMENTATION */
 
 #endif /* FHTTPD_INT_HTABLE_H */

@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define HT_PREFIX str_
 #define HT_KEY_TYPE char *
@@ -32,7 +33,6 @@
 #    undef HT_KEY_DUP_CB
 #    undef HT_KEY_FREE_CB
 #    undef HT_KEY_DUP_CHECK
-#    undef HT_IMPLEMENTATION_ALREADY_DEFINED
 #endif /* HT_LOCAL_IMPLEMENTATION */
 
 #endif /* FHTTPD_STR_HTABLE_H */
