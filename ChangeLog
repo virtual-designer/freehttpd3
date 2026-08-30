@@ -1,5 +1,18 @@
 30-08-2026  Ar Rakin <rakinar2@osndevs.org>
 
+     [*] merge: branch 'main' of github.com:virtual-designer/freehttpd3
+         
+
+     [*] feat: add prototype xpoll code
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+     [*] feat(log): use __VA_OPT__ whenever possible
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
      [*] feat(htable): use entry list during cleanup
          
          Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
@@ -8,6 +21,13 @@
      [*] refactor: add explicit asserts and comments
          
          Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+30-08-2026  Conventional Release Action <rakinar2@onesoftnet.eu.org>
+
+     [*] release: v3.26.0 [skip ci]
+         
+         Signed-off-by: Conventional Release Action <rakinar2@onesoftnet.eu.org>
          
 
 29-08-2026  Conventional Release Action <rakinar2@onesoftnet.eu.org>
