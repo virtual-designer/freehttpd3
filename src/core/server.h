@@ -2,7 +2,7 @@
 #define FHTTPD_SERVER_H
 
 #include <stdbool.h>
-#include "config.h"
+#include "conf.h"
 
 struct fh_server;
 

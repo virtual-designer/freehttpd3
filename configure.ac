@@ -22,6 +22,10 @@ AM_SILENT_RULES([yes])
 
 AC_SUBST([VERSION], FHTTPD_VERSION)
 
+AC_ARG_ENABLE([maintainer-mode], 
+              [AS_HELP_STRING([--maintainer-mode    Enable maintainer mode.])], 
+              [enable_maintainer_mode=yes], [enable_maintainer_mode=no])
+
 dnl Checks for programs.
 AC_PROG_CC
 AC_PROG_GREP
@@ -35,10 +39,40 @@ dnl Checks for libraries.
 dnl Checks for header files.
 
 dnl Checks for typedefs, structures, and compiler characteristics.
+AC_MSG_CHECKING([whether __VA_OPT__ is supported])
+AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
+#define TEST_MACRO(format, ...) fn (format "\n" __VA_OPT__(,) __VA_ARGS__)
+
+static void 
+fn (const char *format, ...) 
+{ 
+    (void) format; 
+}
+
+int 
+main (void)
+{
+    TEST_MACRO("A");
+    TEST_MACRO("A", 1);
+    TEST_MACRO("A", 1, 2);
+    return 0;
+}
+]])], [
+    AC_DEFINE([STDC_HAVE_VA_OPT], [1], [__VA_OPT__ is safely usable])
+    AC_MSG_RESULT([yes])
+], [
+    AC_MSG_RESULT([no])
+])
 
 dnl Checks for library functions.
 
+dnl Configure compiler flags
 CONCAT_SPACED_STRING([CPPFLAGS], [-I\$(top_srcdir)/src])
+
+AS_IF([test "$enable_maintainer_mode" = "yes"], [
+	AC_MSG_NOTICE([enabling maintainer mode])
+	CONCAT_SPACED_STRING([CFLAGS], [-Wall -Wextra -pedantic -std=gnu99])
+], [])
 
 AC_CONFIG_FILES([Makefile
                  src/Makefile

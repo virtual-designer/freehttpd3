@@ -1,5 +1,5 @@
-#ifndef FHTTPD_CONFIG_H
-#define FHTTPD_CONFIG_H
+#ifndef FHTTPD_CONF_H
+#define FHTTPD_CONF_H
 
 #include <stdint.h>
 #include <stddef.h>
@@ -23,4 +23,4 @@ struct fh_config
     size_t vhost_count;
 };
 
-#endif /* FHTTPD_CONFIG_H */
+#endif /* FHTTPD_CONF_H */
