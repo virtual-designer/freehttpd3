@@ -15,7 +15,10 @@ AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([m4])
 
 AC_CANONICAL_TARGET
-AC_CANONICAL_HOST
+AC_CANONICAL_BUILD
+
+AC_DEFINE_UNQUOTED([FH_BUILD_SYSTEM_TYPE], ["$build"], [Define the build system type])
+AC_DEFINE_UNQUOTED([FH_TARGET_SYSTEM_TYPE], ["$target"], [Define the target system type])
 
 AM_INIT_AUTOMAKE([-Wall gnu 1.11 info-in-builddir subdir-objects dist-xz dist-bzip2 parallel-tests])
 AM_SILENT_RULES([yes])
@@ -78,6 +81,7 @@ AC_CONFIG_FILES([Makefile
                  src/Makefile
                  src/core/Makefile
                  src/hash/Makefile
+                 src/event/Makefile
                  src/log/Makefile
                  src/utils/Makefile
                  src/progs/Makefile

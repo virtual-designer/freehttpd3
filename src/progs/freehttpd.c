@@ -38,7 +38,7 @@ usage (void)
 static void
 show_version (void)
 {
-    fprintf (stdout, PACKAGE_NAME " version " PACKAGE_VERSION ".\n");
+    fprintf (stdout, PACKAGE_NAME " version " PACKAGE_VERSION " (" FH_TARGET_SYSTEM_TYPE ")\n");
     fprintf (stdout, "License GPLv3.0+: This is free software.\n");
     fprintf (stdout, "\n");
     fprintf (stdout, "Written by Ar Rakin.\n");

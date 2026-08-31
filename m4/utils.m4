@@ -21,8 +21,8 @@ AC_DEFUN([PRINT_SUMMARY], [
 	AC_MSG_NOTICE([configuration summary:
 
   Version:                   $VERSION
-  Target:                    $target
-  Host:                      $host
+  Target Triplet:            $target
+  Build Triplet:             $build
   Build type:                $build_type
   Compiler:                  $CC
   Compiler flags:            $CFLAGS

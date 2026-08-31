@@ -1,1 +1,1 @@
-SUBDIRS = core utils log hash progs
+SUBDIRS = core utils event log hash progs
