@@ -1,3 +1,17 @@
+01-09-2026  Ar Rakin <rakinar2@osndevs.org>
+
+     [*] fix: compiler warnings
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+01-09-2026  Conventional Release Action <rakinar2@onesoftnet.eu.org>
+
+     [*] release: v3.29.0 [skip ci]
+         
+         Signed-off-by: Conventional Release Action <rakinar2@onesoftnet.eu.org>
+         
+
 01-09-2026  Ar Rakin <rakinar2@onesoftnet.eu.org>
 
      [*] fix: bsd/darwin issues
