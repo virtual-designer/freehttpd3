@@ -1,3 +1,32 @@
+01-09-2026  Ar Rakin <rakinar2@onesoftnet.eu.org>
+
+     [*] fix: bsd/darwin issues
+         
+         Signed-off-by: Ar Rakin <rakinar2@onesoftnet.eu.org>
+         
+
+31-08-2026  Ar Rakin <rakinar2@osndevs.org>
+
+     [*] merge: branch 'main' of github.com:virtual-designer/freehttpd3
+         
+
+     [*] feat(event): xpoll
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+30-08-2026  Conventional Release Action <rakinar2@onesoftnet.eu.org>
+
+     [*] release: v3.28.0 [skip ci]
+         
+         Signed-off-by: Conventional Release Action <rakinar2@onesoftnet.eu.org>
+         
+
+     [*] release: v3.26.0 [skip ci]
+         
+         Signed-off-by: Conventional Release Action <rakinar2@onesoftnet.eu.org>
+         
+
 30-08-2026  Ar Rakin <rakinar2@osndevs.org>
 
      [*] merge: branch 'main' of github.com:virtual-designer/freehttpd3
@@ -21,13 +50,6 @@
      [*] refactor: add explicit asserts and comments
          
          Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
-         
-
-30-08-2026  Conventional Release Action <rakinar2@onesoftnet.eu.org>
-
-     [*] release: v3.26.0 [skip ci]
-         
-         Signed-off-by: Conventional Release Action <rakinar2@onesoftnet.eu.org>
          
 
 29-08-2026  Conventional Release Action <rakinar2@onesoftnet.eu.org>
