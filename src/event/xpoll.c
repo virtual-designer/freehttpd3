@@ -3,6 +3,7 @@
 #include <fcntl.h>
 #include <poll.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -36,20 +37,30 @@ xpoll_create (enum xpoll_create_flag flags)
 #if defined(FH_PLATFORM_LINUX)
     return epoll_create1 (flags);
 #elif defined(FH_PLATFORM_BSDLIKE)
+    int err;
     int kq = kqueue ();
 
     if (kq < 0)
         return kq;
 
-    if ((flags & XPOLL_CLOEXEC) && fcntl (kq, F_SETFD, FD_CLOEXEC) < 0)
-    {
-        int err = errno;
-        close (kq);
-        errno = err;
-        return -1;
-    }
+    int fd_flags = fcntl (kq, F_GETFD);
+
+    if (fd_flags < 0)
+        goto xpoll_create_err;
+
+    if (fcntl (kq, F_SETFD,
+               flags & XPOLL_CLOEXEC ? (fd_flags | FD_CLOEXEC)
+                                     : (fd_flags & ~FD_CLOEXEC))
+        < 0)
+        goto xpoll_create_err;
 
     return kq;
+
+xpoll_create_err:
+    err = errno;
+    close (kq);
+    errno = err;
+    return -1;
 #else
     (void) flags;
 
@@ -64,38 +75,58 @@ xpoll_create (enum xpoll_create_flag flags)
 
 static bool __attribute__ ((unused))
 xpoll_ctl_fd (xpoll_t xp, fd_t fd, int op_bsd, int op_generic,
-              xpoll_event_type_t events)
+              xpoll_event_type_t events, bool ret_on_failure)
 {
 #if defined(FH_PLATFORM_BSDLIKE)
     (void) op_generic;
 
-    struct kevent event = { 0 };
+    struct kevent event_read = { 0 };
+    struct kevent event_write = { 0 };
     int mask = (events & XPOLL_EDGE) == XPOLL_EDGE ? EV_CLEAR : 0;
-
-    /* If registration fails, we silently ignore the already registered
-       filters.  This is intentional, as if something goes wrong registering
-       an event, something terribly went wrong and needs to be handled outside.
-     */
+    bool ret = false;
 
     if ((events & XPOLL_READ) == XPOLL_READ)
     {
-        EV_SET (&event, fd, EVFILT_READ, op_bsd | mask, 0, 0, NULL);
+        EV_SET (&event_read, fd, EVFILT_READ, op_bsd | mask, 0, 0, NULL);
 
-        if (kevent (xp, &event, 1, NULL, 0, NULL) < 0)
-            return false;
+        if (kevent (xp, &event_read, 1, NULL, 0, NULL) < 0)
+        {
+            if (ret_on_failure)
+                return false;
+        }
+        else
+        {
+            ret = true;
+        }
     }
 
     if ((events & XPOLL_WRITE) == XPOLL_WRITE)
     {
-        EV_SET (&event, fd, EVFILT_WRITE, op_bsd | mask, 0, 0, NULL);
+        EV_SET (&event_write, fd, EVFILT_WRITE, op_bsd | mask, 0, 0, NULL);
 
-        if (kevent (xp, &event, 1, NULL, 0, NULL) < 0)
-            return false;
+        if (kevent (xp, &event_write, 1, NULL, 0, NULL) < 0)
+        {
+            if (ret_on_failure)
+            {
+                if (op_bsd == EV_ADD && (events & XPOLL_READ))
+                {
+                    event_read.flags = EV_DELETE;
+                    kevent (xp, &event_read, 1, NULL, 0, NULL);
+                }
+
+                return false;
+            }
+        }
+        else
+        {
+            ret = true;
+        }
     }
 
-    return true;
+    return ret;
 #elif defined(FH_PLATFORM_UNKNOWN)
     (void) op_bsd;
+    (void) ret_on_failure;
 
     switch (op_generic)
     {
@@ -189,9 +220,9 @@ bool
 xpoll_add_fd (xpoll_t xp, fd_t fd, xpoll_event_type_t events)
 {
 #if defined(FH_PLATFORM_BSDLIKE)
-    return xpoll_ctl_fd (xp, fd, EV_ADD, 0, events);
+    return xpoll_ctl_fd (xp, fd, EV_ADD, 0, events, true);
 #elif defined(FH_PLATFORM_UNKNOWN)
-    return xpoll_ctl_fd (xp, fd, 0, XPOLL_CTL_ADD, events);
+    return xpoll_ctl_fd (xp, fd, 0, XPOLL_CTL_ADD, events, true);
 #else
     (void) xp;
     (void) fd;
@@ -204,10 +235,10 @@ bool
 xpoll_modify_fd (xpoll_t xp, fd_t fd, xpoll_event_type_t events)
 {
 #if defined(FH_PLATFORM_BSDLIKE)
-    xpoll_ctl_fd (xp, fd, EV_DELETE, 0, XPOLL_READ | XPOLL_WRITE);
-    return xpoll_ctl_fd (xp, fd, EV_ADD, 0, events);
+    xpoll_ctl_fd (xp, fd, EV_DELETE, 0, XPOLL_READ | XPOLL_WRITE, false);
+    return xpoll_ctl_fd (xp, fd, EV_ADD, 0, events, true);
 #elif defined(FH_PLATFORM_UNKNOWN)
-    return xpoll_ctl_fd (xp, fd, 0, XPOLL_CTL_MOD, events);
+    return xpoll_ctl_fd (xp, fd, 0, XPOLL_CTL_MOD, events, true);
 #else
     (void) xp;
     (void) fd;
@@ -220,9 +251,10 @@ bool
 xpoll_remove_fd (xpoll_t xp, fd_t fd)
 {
 #if defined(FH_PLATFORM_BSDLIKE)
-    return xpoll_ctl_fd (xp, fd, EV_DELETE, 0, XPOLL_READ | XPOLL_WRITE);
+    return xpoll_ctl_fd (xp, fd, EV_DELETE, 0, XPOLL_READ | XPOLL_WRITE, false);
 #elif defined(FH_PLATFORM_UNKNOWN)
-    return xpoll_ctl_fd (xp, fd, 0, XPOLL_CTL_DEL, XPOLL_READ | XPOLL_WRITE);
+    return xpoll_ctl_fd (xp, fd, 0, XPOLL_CTL_DEL, XPOLL_READ | XPOLL_WRITE,
+                         false);
 #else
     (void) xp;
     (void) fd;

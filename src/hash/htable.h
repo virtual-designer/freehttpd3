@@ -84,4 +84,4 @@ struct HT_NAME (htable)
                  ENT *entry;                                                   \
              } it = ht_iter_begin (table);                                     \
              ht_iter_has_next (it); ht_iter_next (table, it))
-             
+
