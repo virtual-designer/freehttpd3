@@ -1,5 +1,18 @@
 01-09-2026  Ar Rakin <rakinar2@osndevs.org>
 
+     [*] merge: branch 'main' of github.com:virtual-designer/freehttpd3
+         
+
+     [*] feat(event): de-dup poll() fds
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+     [*] feat(hash): add set function with flag
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
      [*] test(xpoll): fix broken fd tests on bsd
          
          Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
@@ -29,6 +42,11 @@
          
 
 01-09-2026  Conventional Release Action <rakinar2@onesoftnet.eu.org>
+
+     [*] release: v3.30.1 [skip ci]
+         
+         Signed-off-by: Conventional Release Action <rakinar2@onesoftnet.eu.org>
+         
 
      [*] release: v3.29.1 [skip ci]
          
