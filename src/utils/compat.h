@@ -6,11 +6,14 @@
 #    define unlikely(x) (__builtin_expect ((x), 0))
 
 #define ATTRIBUTE_FORMAT_PRINTF(arg1, arg2) __attribute__((format(printf, (arg1), (arg2))))
+#define FH_INLINE inline __attribute__((always_inline))
 #else
 #    define likely(x) (x)
 #    define unlikely(x) (x)
 
 #define ATTRIBUTE_FORMAT_PRINTF(arg1, arg2)
+#define FH_INLINE inline
+#define __attribute__(x)
 #endif
 
 #if defined(__linux__)

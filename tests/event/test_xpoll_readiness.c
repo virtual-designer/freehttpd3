@@ -12,7 +12,8 @@ main (void)
 
     fd_t pair[2];
     CHECK (xpoll_test_socketpair (pair));
-    CHECK (xpoll_add_fd (xp, pair[0], XPOLL_READ));
+    CHECK (
+        xpoll_add_fd (xp, pair[0], xpoll_test_fd_udata (pair[0]), XPOLL_READ));
 
     xpoll_event_t events[8];
 
@@ -44,7 +45,8 @@ main (void)
     xp = xpoll_create (XPOLL_CLOEXEC);
     CHECK (!XPOLL_XP_ERR (xp));
     CHECK (xpoll_test_socketpair (pair));
-    CHECK (xpoll_add_fd (xp, pair[0], XPOLL_READ | XPOLL_EDGE));
+    CHECK (xpoll_add_fd (xp, pair[0], xpoll_test_fd_udata (pair[0]),
+                         XPOLL_READ | XPOLL_EDGE));
     CHECK (xpoll_test_write_byte (pair[1]));
 
     ret = xpoll_test_wait (xp, events, 8, 1000);

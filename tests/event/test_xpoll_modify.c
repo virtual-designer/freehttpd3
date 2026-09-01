@@ -19,7 +19,8 @@ main (void)
 
     fd_t pair[2];
     CHECK (xpoll_test_socketpair (pair));
-    CHECK (xpoll_add_fd (xp, pair[0], XPOLL_READ));
+    CHECK (
+        xpoll_add_fd (xp, pair[0], xpoll_test_fd_udata (pair[0]), XPOLL_READ));
 
     /* Make the fd both readable and writable, so that a stale read
        registration is visible in the results. */
@@ -35,7 +36,8 @@ main (void)
                "write readiness reported for a read-only registration");
 
     /* Switch the interest set over to writes only. */
-    CHECK (xpoll_modify_fd (xp, pair[0], XPOLL_WRITE));
+    CHECK (xpoll_modify_fd (xp, pair[0], xpoll_test_fd_udata (pair[0]),
+                            XPOLL_WRITE));
 
     ret = xpoll_test_wait (xp, events, 8, 1000);
     CHECK (ret >= 1);

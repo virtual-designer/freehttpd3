@@ -14,5 +14,5 @@ SortIncludes: true
 IndentGotoLabels: true
 IndentCaseBlocks: true
 InsertNewlineAtEOF: true
-IndentPPDirectives: AfterHash
+IndentPPDirectives: BeforeHash
 SpaceAfterCStyleCast: true

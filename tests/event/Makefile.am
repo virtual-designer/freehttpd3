@@ -20,7 +20,8 @@ XPOLL_TESTS = \
     test_xpoll_cloexec \
     test_xpoll_dup_add \
     test_xpoll_badfd \
-    test_xpoll_scale
+    test_xpoll_scale \
+    test_xpoll_udata
 
 check_PROGRAMS = $(XPOLL_TESTS)
 
@@ -36,6 +37,7 @@ test_xpoll_cloexec_SOURCES = test_xpoll_cloexec.c $(XPOLL_TEST_COMMON) $(XPOLL_S
 test_xpoll_dup_add_SOURCES = test_xpoll_dup_add.c $(XPOLL_TEST_COMMON) $(XPOLL_SOURCES)
 test_xpoll_badfd_SOURCES = test_xpoll_badfd.c $(XPOLL_TEST_COMMON) $(XPOLL_SOURCES)
 test_xpoll_scale_SOURCES = test_xpoll_scale.c $(XPOLL_TEST_COMMON) $(XPOLL_SOURCES)
+test_xpoll_udata_SOURCES = test_xpoll_udata.c $(XPOLL_TEST_COMMON) $(XPOLL_SOURCES)
 
 # Only one xpoll backend is compiled per host, so on Linux the portable
 # poll() implementation in xpoll.c is never built at all and its bugs

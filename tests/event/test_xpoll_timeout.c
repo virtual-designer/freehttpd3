@@ -25,7 +25,8 @@ main (void)
 
     fd_t pair[2];
     CHECK (xpoll_test_socketpair (pair));
-    CHECK (xpoll_add_fd (xp, pair[0], XPOLL_READ));
+    CHECK (
+        xpoll_add_fd (xp, pair[0], xpoll_test_fd_udata (pair[0]), XPOLL_READ));
 
     xpoll_event_t events[8];
     struct timespec start;

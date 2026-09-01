@@ -17,8 +17,10 @@ main (void)
     fd_t pair[2];
     CHECK (xpoll_test_socketpair (pair));
 
-    CHECK (xpoll_add_fd (xp, pair[0], XPOLL_READ));
-    CHECK (xpoll_modify_fd (xp, pair[0], XPOLL_READ | XPOLL_WRITE));
+    CHECK (
+        xpoll_add_fd (xp, pair[0], xpoll_test_fd_udata (pair[0]), XPOLL_READ));
+    CHECK (xpoll_modify_fd (xp, pair[0], xpoll_test_fd_udata (pair[0]),
+                            XPOLL_READ | XPOLL_WRITE));
     CHECK (xpoll_remove_fd (xp, pair[0]));
 
     /* Removing it a second time must fail: epoll reports ENOENT, kqueue

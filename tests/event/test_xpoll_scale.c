@@ -33,7 +33,8 @@ main (void)
     for (int i = 0; i < PAIRS; i++)
     {
         CHECK (xpoll_test_socketpair (pairs[i]));
-        CHECK_MSG (xpoll_add_fd (xp, pairs[i][0], XPOLL_READ),
+        CHECK_MSG (xpoll_add_fd (xp, pairs[i][0],
+                                 xpoll_test_fd_udata (pairs[i][0]), XPOLL_READ),
                    "registering fd %d (entry %d of %d) failed", pairs[i][0], i,
                    PAIRS);
     }
@@ -69,7 +70,7 @@ main (void)
 
         for (int j = 0; j < n; j++)
             for (int i = 0; i < PAIRS; i++)
-                if (events[j].data.fd == pairs[i][0])
+                if (xpoll_test_udata_fd (&events[j]) == pairs[i][0])
                     seen[i]++;
     }
 
@@ -128,7 +129,8 @@ main (void)
                "rotation cursor");
 
     for (int i = BATCH; i < PAIRS; i++)
-        CHECK (xpoll_add_fd (xp, pairs[i][0], XPOLL_READ));
+        CHECK (xpoll_add_fd (xp, pairs[i][0], xpoll_test_fd_udata (pairs[i][0]),
+                             XPOLL_READ));
 
     /* Draining every fd quiets the whole set. */
     for (int i = 0; i < PAIRS; i++)
@@ -151,7 +153,8 @@ main (void)
                "events reported after every fd was removed");
 
     /* The instance is still usable once it has shrunk. */
-    CHECK (xpoll_add_fd (xp, pairs[0][0], XPOLL_READ));
+    CHECK (xpoll_add_fd (xp, pairs[0][0], xpoll_test_fd_udata (pairs[0][0]),
+                         XPOLL_READ));
 
     ret = xpoll_test_wait (xp, events, PAIRS * 2, 1000);
     CHECK (ret >= 1);

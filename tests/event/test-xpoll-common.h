@@ -9,6 +9,37 @@
 #include "event/xpoll.h"
 #include "test-common.h"
 
+/* Reading an event back is not spelled the same everywhere: on Linux
+   xpoll_event_t is epoll's own struct, whose pointer shares a union with
+   the fd, while the other backends carry a dedicated udata field. */
+
+#if defined(FH_PLATFORM_LINUX)
+    #define XPOLL_TEST_UDATA(ev) ((ev).data.ptr)
+#else
+    #define XPOLL_TEST_UDATA(ev) ((ev).udata)
+#endif
+
+/* No backend reports the fd on its own any more: epoll's data field is a
+   union, so the pointer overwrites it, and the kqueue backend fills in
+   udata alone.  As xpoll.h spells out, a caller that wants the fd back
+   has to register it as the user data itself -- which is what these two
+   do, so that the assertions below can still key on descriptors.
+
+   Registering a pointer that is not really a pointer is fine for the
+   round trip; test_xpoll_udata.c covers the real-pointer case. */
+
+static inline void *
+xpoll_test_fd_udata (fd_t fd)
+{
+    return (void *) (intptr_t) fd;
+}
+
+static inline fd_t
+xpoll_test_udata_fd (const xpoll_event_t *ev)
+{
+    return (fd_t) (intptr_t) XPOLL_TEST_UDATA (*ev);
+}
+
 /* The backends disagree on how a single fd is reported: epoll coalesces
    read and write readiness into one entry, while kqueue returns one entry
    per filter.  Tests must therefore aggregate results by fd rather than
@@ -20,7 +51,7 @@ xpoll_test_events_for (const xpoll_event_t *events, int n, fd_t fd)
     uint32_t mask = 0;
 
     for (int i = 0; i < n; i++)
-        if (events[i].data.fd == fd)
+        if (xpoll_test_udata_fd (&events[i]) == fd)
             mask |= events[i].events;
 
     return mask;
@@ -60,7 +91,7 @@ xpoll_test_count_for (const xpoll_event_t *events, int n, fd_t fd)
     int count = 0;
 
     for (int i = 0; i < n; i++)
-        if (events[i].data.fd == fd)
+        if (xpoll_test_udata_fd (&events[i]) == fd)
             count++;
 
     return count;

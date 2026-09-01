@@ -23,10 +23,13 @@ main (void)
     fd_t pair[2];
     CHECK (xpoll_test_socketpair (pair));
 
-    CHECK (xpoll_add_fd (xp, pair[0], XPOLL_READ));
-    CHECK_MSG (xpoll_add_fd (xp, pair[0], XPOLL_READ) == false,
-               "adding an already-registered fd succeeded; use "
-               "xpoll_modify_fd() to change an interest set");
+    CHECK (
+        xpoll_add_fd (xp, pair[0], xpoll_test_fd_udata (pair[0]), XPOLL_READ));
+    CHECK_MSG (
+        xpoll_add_fd (xp, pair[0], xpoll_test_fd_udata (pair[0]), XPOLL_READ)
+            == false,
+        "adding an already-registered fd succeeded; use "
+        "xpoll_modify_fd() to change an interest set");
 
     /* One removal, for one registration. */
     CHECK (xpoll_remove_fd (xp, pair[0]));
@@ -44,7 +47,8 @@ main (void)
     /* Re-adding after a genuine removal is fine, and must be reported
        once more.  This also catches a backend that removed the entry but
        left stale bookkeeping behind. */
-    CHECK (xpoll_add_fd (xp, pair[0], XPOLL_READ));
+    CHECK (
+        xpoll_add_fd (xp, pair[0], xpoll_test_fd_udata (pair[0]), XPOLL_READ));
 
     ret = xpoll_test_wait (xp, events, 16, 1000);
     CHECK (ret >= 1);

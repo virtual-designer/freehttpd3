@@ -17,7 +17,8 @@ main (void)
     for (int i = 0; i < PAIRS; i++)
     {
         CHECK (xpoll_test_socketpair (pairs[i]));
-        CHECK (xpoll_add_fd (xp, pairs[i][0], XPOLL_READ));
+        CHECK (xpoll_add_fd (xp, pairs[i][0], xpoll_test_fd_udata (pairs[i][0]),
+                             XPOLL_READ));
     }
 
     /* Make every other pair readable. */
@@ -56,12 +57,13 @@ main (void)
         if (capped < 1)
             break;
 
-        CHECK_MSG (events[0].data.fd == pairs[0][0]
-                       || events[0].data.fd == pairs[2][0],
-                   "capped batch reported unready fd %d", events[0].data.fd);
+        CHECK_MSG (xpoll_test_udata_fd (&events[0]) == pairs[0][0]
+                       || xpoll_test_udata_fd (&events[0]) == pairs[2][0],
+                   "capped batch reported unready fd %d",
+                   xpoll_test_udata_fd (&events[0]));
 
-        seen_first |= events[0].data.fd == pairs[0][0];
-        seen_third |= events[0].data.fd == pairs[2][0];
+        seen_first |= xpoll_test_udata_fd (&events[0]) == pairs[0][0];
+        seen_third |= xpoll_test_udata_fd (&events[0]) == pairs[2][0];
     }
 
     CHECK_MSG (seen_first && seen_third,

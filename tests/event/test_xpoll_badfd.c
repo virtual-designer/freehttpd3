@@ -22,7 +22,7 @@ main (void)
     CHECK (xpoll_test_socketpair (pair));
 
 #ifdef FH_PLATFORM_LINUX
-    CHECK_MSG (xpoll_add_fd (xp, -1, XPOLL_READ) == false,
+    CHECK_MSG (xpoll_add_fd (xp, -1, NULL, XPOLL_READ) == false,
                "a negative fd was accepted for registration");
 
     /* A descriptor that was valid but is closed by the time it is
@@ -31,14 +31,14 @@ main (void)
     CHECK (xpoll_test_socketpair (stale));
     xpoll_test_close_pair (stale);
 
-    CHECK_MSG (xpoll_add_fd (xp, stale[0], XPOLL_READ) == false,
+    CHECK_MSG (xpoll_add_fd (xp, stale[0], NULL, XPOLL_READ) == false,
                "a closed fd was accepted for registration");
 #endif
 
     /* Changing an interest set that was never established is an error,
        not a silent no-op and not an implicit add.  Every backend does
        promise this one. */
-    CHECK_MSG (xpoll_modify_fd (xp, pair[0], XPOLL_READ) == false,
+    CHECK_MSG (xpoll_modify_fd (xp, pair[0], NULL, XPOLL_READ) == false,
                "modifying an unregistered fd succeeded");
 
     CHECK (xpoll_test_write_byte (pair[1]));
@@ -56,7 +56,8 @@ main (void)
        xpoll_wait() is called directly here rather than through the
        harness helper, because the helper retries on EINTR and this call
        is expected to fail. */
-    CHECK (xpoll_add_fd (xp, pair[0], XPOLL_READ));
+    CHECK (
+        xpoll_add_fd (xp, pair[0], xpoll_test_fd_udata (pair[0]), XPOLL_READ));
 
     errno = 0;
 

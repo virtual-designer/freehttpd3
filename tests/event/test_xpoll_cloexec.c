@@ -1,8 +1,12 @@
 /* XPOLL_CLOEXEC must actually set FD_CLOEXEC on the backing descriptor,
    and must not set it when the flag is absent.
 
-   Only meaningful where xpoll_t is a descriptor; the poll backend keeps
-   its state in heap memory and documents the flag as a no-op there. */
+   Only checkable where xpoll_t is itself a descriptor, which is now Linux
+   alone.  The poll backend keeps its state in heap memory and documents
+   the flag as a no-op there, and the kqueue backend has a real descriptor
+   to check but hides it inside an opaque struct xpoll, so the flag it
+   sets in xpoll_create() cannot be observed from out here.  Both fall
+   back to asserting that creation itself works. */
 
 #include <fcntl.h>
 
@@ -11,7 +15,7 @@
 int
 main (void)
 {
-#ifndef FH_PLATFORM_UNKNOWN
+#ifdef FH_PLATFORM_LINUX
     xpoll_t xp = xpoll_create (XPOLL_CLOEXEC);
     CHECK (!XPOLL_XP_ERR (xp));
 
@@ -32,7 +36,7 @@ main (void)
 
     xpoll_close (xp);
 #else
-    /* Nothing to assert; the instance is not a descriptor. */
+    /* No descriptor reachable from here; only creation is checkable. */
     xpoll_t xp = xpoll_create (XPOLL_CLOEXEC);
     CHECK (!XPOLL_XP_ERR (xp));
     xpoll_close (xp);
