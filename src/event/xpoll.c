@@ -212,6 +212,7 @@ xpoll_ctl_fd (xpoll_t xp, fd_t fd, int op_bsd, int op_generic,
     (void) op_bsd;
     (void) op_generic;
     (void) events;
+    (void) ret_on_failure;
     return false;
 #endif
 }
