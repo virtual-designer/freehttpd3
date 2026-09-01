@@ -45,15 +45,29 @@ main (void)
     long waited = elapsed_ms_since (&start);
     CHECK_MSG (waited >= 100, "a 200 ms timeout returned after %ld ms", waited);
 
+    /* And an upper bound, so that a backend which overshoots the timeout
+       or blocks outright fails here rather than hanging until the test
+       harness kills it.  The ceiling is deliberately far above 200 ms:
+       this catches "waited forever", not scheduler jitter. */
+    CHECK_MSG (waited < 2000, "a 200 ms timeout returned after %ld ms",
+               waited);
+
     /* A negative timeout blocks until something is ready.  Data is made
        available first, so a correct implementation returns immediately
        and a broken one fails rather than hanging. */
     CHECK (xpoll_test_write_byte (pair[1]));
 
+    clock_gettime (CLOCK_MONOTONIC, &start);
+
     int ret = xpoll_test_wait (xp, events, 8, -1);
     CHECK_MSG (ret >= 1, "an infinite timeout returned %d with data pending",
                ret);
     CHECK (xpoll_test_events_for (events, ret, pair[0]) & XPOLL_READ);
+
+    waited = elapsed_ms_since (&start);
+    CHECK_MSG (waited < 2000,
+               "an infinite timeout took %ld ms to report a ready fd",
+               waited);
 
     xpoll_test_close_pair (pair);
     xpoll_close (xp);

@@ -1,3 +1,4 @@
 test_*
 !test_*.c
 !test_*.sh
+generic-test_xpoll_*

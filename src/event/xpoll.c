@@ -24,6 +24,7 @@ struct xpoll
     struct pollfd *fds;
     size_t fd_count;
     size_t fd_cap;
+    size_t fd_last_wait_index;
 };
 
 #    define XPOLL_CTL_ADD 0x1
@@ -223,6 +224,7 @@ xpoll_add_fd (xpoll_t xp, fd_t fd, xpoll_event_type_t events)
 #if defined(FH_PLATFORM_BSDLIKE)
     return xpoll_ctl_fd (xp, fd, EV_ADD, 0, events, true);
 #elif defined(FH_PLATFORM_UNKNOWN)
+    assert (fd >= 0);
     return xpoll_ctl_fd (xp, fd, 0, XPOLL_CTL_ADD, events, true);
 #else
     (void) xp;
@@ -276,6 +278,12 @@ xpoll_wait (xpoll_t xp, xpoll_event_t *events_out, int max_events,
     assert (max_events >= 0);
 
 #if defined(FH_PLATFORM_BSDLIKE)
+    if (!max_events)
+    {
+        errno = EINVAL;
+        return -1;
+    }
+
     struct kevent events[max_events + 1];
     struct timespec ts = { .tv_sec = timeout_ms / 1000,
                            .tv_nsec = (timeout_ms % 1000) * 1000000 };
@@ -304,27 +312,55 @@ xpoll_wait (xpoll_t xp, xpoll_event_t *events_out, int max_events,
 
     return ret;
 #elif defined(FH_PLATFORM_UNKNOWN)
+    if (!max_events)
+    {
+        errno = EINVAL;
+        return -1;
+    }
+
     int ret = poll (xp->fds, xp->fd_count, timeout_ms);
 
     if (ret < 0)
         return ret;
 
+    if (!xp->fd_count)
+        return 0;
+
     int count = 0;
+    size_t limit = xp->fd_count;
+    bool rotated = false;
+    size_t i;
+    size_t begin = xp->fd_last_wait_index % xp->fd_count;
 
-    for (size_t i = 0; i < xp->fd_count && count < max_events; i++)
+    for (i = begin; i < limit && count < max_events;)
     {
-        if (!xp->fds[i].revents)
-            continue;
+        if (xp->fds[i].revents)
+        {
+            events_out[count].data.fd = xp->fds[i].fd;
+            events_out[count].events = xp->fds[i].revents;
 
-        events_out[count].data.fd = xp->fds[i].fd;
-        events_out[count].events = xp->fds[i].revents;
+            if (xp->fds[i].revents & POLLNVAL)
+            {
+                events_out[count].events |= XPOLL_ERROR;
+                events_out[count].events &= ~POLLNVAL;
+            }
 
-        if (xp->fds[i].revents & POLLNVAL)
-            events_out[count].events |= XPOLL_ERROR;
+            count++;
+        }
 
-        count++;
+        if (i + 1 >= xp->fd_count && !rotated && begin != 0)
+        {
+            rotated = true;
+            limit = begin;
+            i = 0;
+        }
+        else
+        {
+            i++;
+        }
     }
 
+    xp->fd_last_wait_index = i >= xp->fd_count ? 0 : i;
     return count;
 #else
     (void) xp;

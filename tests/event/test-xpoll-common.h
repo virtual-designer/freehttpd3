@@ -27,7 +27,12 @@ xpoll_test_events_for (const xpoll_event_t *events, int n, fd_t fd)
 }
 
 /* xpoll_wait() maps onto syscalls that may be interrupted by a signal;
-   a test harness should not fail because of that. */
+   a test harness should not fail because of that.
+
+   errno is cleared before each attempt on purpose: a backend that fails
+   for its own reasons without setting errno would otherwise inherit a
+   stale EINTR from an earlier call and spin here forever.  Tests that
+   want to inspect a failure directly should call xpoll_wait(). */
 
 static inline int
 xpoll_test_wait (xpoll_t xp, xpoll_event_t *events, int max_events,
@@ -36,10 +41,29 @@ xpoll_test_wait (xpoll_t xp, xpoll_event_t *events, int max_events,
     int ret;
 
     do
+    {
+        errno = 0;
         ret = xpoll_wait (xp, events, max_events, timeout_ms);
+    }
     while (ret < 0 && errno == EINTR);
 
     return ret;
+}
+
+/* How many entries a single wait produced for one fd.  Distinct from the
+   mask helper above: a duplicate registration shows up as an extra entry
+   carrying the same bits, which OR-ing them together would hide. */
+
+static inline int
+xpoll_test_count_for (const xpoll_event_t *events, int n, fd_t fd)
+{
+    int count = 0;
+
+    for (int i = 0; i < n; i++)
+        if (events[i].data.fd == fd)
+            count++;
+
+    return count;
 }
 
 static inline bool

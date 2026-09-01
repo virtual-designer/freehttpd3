@@ -35,23 +35,39 @@ main (void)
     CHECK_MSG (xpoll_test_events_for (events, ret, pairs[3][0]) == 0,
                "idle fd %d reported as ready", pairs[3][0]);
 
-    /* max_events caps a batch.  Nothing is drained in between, so the
-       fds left out are still ready and must show up on the next call:
-       between the two batches both readable fds are accounted for. */
-    ret = xpoll_test_wait (xp, events, 16, 0);
-    CHECK (ret >= 1);
+    /* max_events caps a batch.  Nothing is drained in between, so both
+       fds stay ready throughout; what matters is that capping the batch
+       does not pin the poller to one fd forever.  Asking for one entry
+       at a time must therefore cover both readable fds within a few
+       calls rather than returning the same one every time.
 
-    int first = xpoll_test_wait (xp, events, 1, 1000);
-    CHECK_MSG (first == 1, "max_events=1 returned %d entries", first);
+       Re-waiting with a large max_events would NOT test this: every
+       backend is level-triggered here, so both fds come back regardless
+       of how the capped calls behaved. */
 
-    uint32_t seen = xpoll_test_events_for (events, first, pairs[0][0])
-                    | xpoll_test_events_for (events, first, pairs[2][0]);
-    CHECK (seen & XPOLL_READ);
+    bool seen_first = false, seen_third = false;
 
-    int second = xpoll_test_wait (xp, events, 16, 1000);
-    CHECK (second >= 1);
-    CHECK (xpoll_test_events_for (events, second, pairs[0][0]) & XPOLL_READ);
-    CHECK (xpoll_test_events_for (events, second, pairs[2][0]) & XPOLL_READ);
+    for (int i = 0; i < 8 && !(seen_first && seen_third); i++)
+    {
+        int capped = xpoll_test_wait (xp, events, 1, 1000);
+
+        CHECK_MSG (capped == 1, "max_events=1 returned %d entries", capped);
+
+        if (capped < 1)
+            break;
+
+        CHECK_MSG (events[0].data.fd == pairs[0][0]
+                       || events[0].data.fd == pairs[2][0],
+                   "capped batch reported unready fd %d", events[0].data.fd);
+
+        seen_first |= events[0].data.fd == pairs[0][0];
+        seen_third |= events[0].data.fd == pairs[2][0];
+    }
+
+    CHECK_MSG (seen_first && seen_third,
+               "max_events=1 never rotated: fd %d seen=%d, fd %d seen=%d "
+               "(a fd that stays ready is starved by capped batches)",
+               pairs[0][0], seen_first, pairs[2][0], seen_third);
 
     /* Draining every ready fd quiets the whole set. */
     CHECK (xpoll_test_drain (pairs[0][0]));

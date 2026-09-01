@@ -1,10 +1,13 @@
 /* xpoll_modify_fd() must replace the interest set, not add to it, and
    xpoll_remove_fd() must silence an fd whatever it was registered for.
 
-   Note for the kqueue backend: modifying to a write-only interest set and
-   then removing the fd exercises xpoll_ctl_fd()'s early return, which
-   gives up on the write filter as soon as the read filter's EV_DELETE
-   fails with ENOENT. */
+   Note for the kqueue backend: after the modify below the fd carries only
+   a write filter, so the removal's EV_DELETE for the read filter fails
+   with ENOENT.  xpoll_remove_fd() passes ret_on_failure=false precisely
+   so that this does not abandon the write filter, and the final
+   assertion here is what pins that down: were the read filter's failure
+   to stop the removal early, the fd would stay registered for writes and
+   keep being reported. */
 
 #include "test-xpoll-common.h"
 

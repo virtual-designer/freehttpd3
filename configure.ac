@@ -85,6 +85,8 @@ AC_CONFIG_FILES([Makefile
                  src/log/Makefile
                  src/utils/Makefile
                  src/progs/Makefile
-                 tests/Makefile])
+                 tests/Makefile
+                 tests/event/Makefile
+                 tests/hash/Makefile])
 AC_OUTPUT
 PRINT_SUMMARY
