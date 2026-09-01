@@ -8,6 +8,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "hash/int_htable.h"
 #include "utils/utils.h"
 #include "xpoll.h"
 
@@ -27,6 +28,7 @@ struct xpoll
 #elif defined(FH_PLATFORM_UNKNOWN)
 struct xpoll
 {
+    int_htable_t *fd_table;
     struct pollfd *fds;
     void **udata_list;
     size_t fd_count;
@@ -87,6 +89,14 @@ xpoll_create_err:
     if (!xp)
         return NULL;
 
+    xp->fd_table = int_htable_create (16);
+
+    if (!xp->fd_table)
+    {
+        free (xp);
+        return NULL;
+    }
+
     return xp;
 #endif
 }
@@ -94,7 +104,7 @@ xpoll_create_err:
 #ifndef FH_PLATFORM_LINUX
 static bool
 xpoll_ctl_fd (xpoll_t xp, fd_t fd, void *udata, int op_bsd, int op_generic,
-              xpoll_event_type_t events, bool ret_on_failure)
+              xpoll_event_type_t events, bool ret_on_partial_failure)
 {
     #if defined(FH_PLATFORM_BSDLIKE)
     (void) op_generic;
@@ -110,7 +120,7 @@ xpoll_ctl_fd (xpoll_t xp, fd_t fd, void *udata, int op_bsd, int op_generic,
 
         if (kevent (xp->kq, &event_list[0], 1, NULL, 0, NULL) < 0)
         {
-            if (ret_on_failure)
+            if (ret_on_partial_failure)
                 return false;
         }
         else
@@ -127,7 +137,7 @@ xpoll_ctl_fd (xpoll_t xp, fd_t fd, void *udata, int op_bsd, int op_generic,
 
         if (kevent (xp->kq, &event_list[1], 1, NULL, 0, NULL) < 0)
         {
-            if (ret_on_failure)
+            if (ret_on_partial_failure)
             {
                 if (op_bsd == EV_ADD && (events & XPOLL_READ))
                 {
@@ -159,41 +169,61 @@ xpoll_ctl_fd (xpoll_t xp, fd_t fd, void *udata, int op_bsd, int op_generic,
     #elif defined(FH_PLATFORM_UNKNOWN)
 
     (void) op_bsd;
-    (void) ret_on_failure;
+    (void) ret_on_partial_failure;
 
     switch (op_generic)
     {
         case XPOLL_CTL_ADD:
-            if (xp->fd_count >= xp->fd_cap)
             {
-                const size_t new_cap = xp->fd_cap < 16 ? 16 : (xp->fd_cap << 1);
-                struct pollfd *new_fds
-                    = realloc (xp->fds, sizeof (*xp->fds) * new_cap);
+                bool flag_created = false;
+                int_htable_set_with_flag (xp->fd_table, (uint64_t) fd,
+                                          xp->fds + xp->fd_count,
+                                          &flag_created);
 
-                if (!new_fds)
+                if (!flag_created)
+                {
+                    errno = EEXIST;
                     return false;
+                }
 
-                xp->fds = new_fds;
+                if (xp->fd_count >= xp->fd_cap)
+                {
+                    const size_t new_cap
+                        = xp->fd_cap < 16 ? 16 : (xp->fd_cap << 1);
+                    struct pollfd *new_fds
+                        = realloc (xp->fds, sizeof (*xp->fds) * new_cap);
 
-                void **new_udata_list = realloc (
-                    xp->udata_list, sizeof (*xp->udata_list) * new_cap);
+                    if (!new_fds)
+                        return false;
 
-                if (!new_udata_list)
-                    return false;
+                    xp->fds = new_fds;
 
-                xp->udata_list = new_udata_list;
-                xp->fd_cap = new_cap;
+                    void **new_udata_list = realloc (
+                        xp->udata_list, sizeof (*xp->udata_list) * new_cap);
+
+                    if (!new_udata_list)
+                        return false;
+
+                    xp->udata_list = new_udata_list;
+                    xp->fd_cap = new_cap;
+                }
+
+                xp->fds[xp->fd_count].fd = fd;
+                xp->fds[xp->fd_count].events = events & ~XPOLL_EDGE;
+                xp->fds[xp->fd_count].revents = 0;
+                xp->udata_list[xp->fd_count] = udata;
+                xp->fd_count++;
+
+                return true;
             }
 
-            xp->fds[xp->fd_count].fd = fd;
-            xp->fds[xp->fd_count].events = events & ~XPOLL_EDGE;
-            xp->fds[xp->fd_count].revents = 0;
-            xp->udata_list[xp->fd_count] = udata;
-            xp->fd_count++;
-
-            return true;
-
         case XPOLL_CTL_MOD:
+            if (!int_htable_has (xp->fd_table, (uint64_t) fd))
+            {
+                errno = ENOENT;
+                return false;
+            }
+
             for (size_t i = 0; i < xp->fd_count; i++)
             {
                 if (xp->fds[i].fd == fd)
@@ -204,10 +234,21 @@ xpoll_ctl_fd (xpoll_t xp, fd_t fd, void *udata, int op_bsd, int op_generic,
                 }
             }
 
+            errno = ENOENT;
             return false;
 
         case XPOLL_CTL_DEL:
             {
+                bool flag = false;
+                int_htable_delete_with_flag (xp->fd_table, (uint64_t) fd,
+                                             &flag);
+
+                if (!flag)
+                {
+                    errno = ENOENT;
+                    return false;
+                }
+
                 bool found = false;
                 size_t fd_index = 0;
 
@@ -222,7 +263,10 @@ xpoll_ctl_fd (xpoll_t xp, fd_t fd, void *udata, int op_bsd, int op_generic,
                 }
 
                 if (!found)
+                {
+                    errno = ENOENT;
                     return false;
+                }
 
                 memmove (xp->fds + fd_index, xp->fds + fd_index + 1,
                          sizeof (*xp->fds) * (xp->fd_count - fd_index - 1));
@@ -430,6 +474,7 @@ xpoll_close (xpoll_t xp)
     close (xp->kq);
     free (xp);
 #else
+    int_htable_free (xp->fd_table);
     free (xp->fds);
     free (xp->udata_list);
     free (xp);

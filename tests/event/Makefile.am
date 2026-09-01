@@ -8,6 +8,10 @@ XPOLL_SOURCES = \
     $(top_srcdir)/src/utils/utils.h \
     $(top_srcdir)/src/utils/types.h
 
+XPOLL_LDADD = \
+    $(top_builddir)/src/hash/libhash.a \
+    $(top_builddir)/src/utils/libutils.a
+
 XPOLL_TEST_COMMON = test-xpoll-common.h
 
 XPOLL_TESTS = \
@@ -39,15 +43,7 @@ test_xpoll_badfd_SOURCES = test_xpoll_badfd.c $(XPOLL_TEST_COMMON) $(XPOLL_SOURC
 test_xpoll_scale_SOURCES = test_xpoll_scale.c $(XPOLL_TEST_COMMON) $(XPOLL_SOURCES)
 test_xpoll_udata_SOURCES = test_xpoll_udata.c $(XPOLL_TEST_COMMON) $(XPOLL_SOURCES)
 
-# Only one xpoll backend is compiled per host, so on Linux the portable
-# poll() implementation in xpoll.c is never built at all and its bugs
-# cannot show up in "make check".  This target builds the same test
-# sources against it: defining compat.h's include guard on the command
-# line neutralises the header, letting the platform macro be supplied
-# here instead of by the host detection.
-#
-# It is intentionally not part of TESTS: it only makes sense where the
-# host backend is something else, and it is meant to be run explicitly.
+LIBS = $(XPOLL_LDADD)
 
 XPOLL_GENERIC_BACKEND_CPPFLAGS = \
     -DFHTTPD_COMPAT_H=1 \
@@ -55,20 +51,17 @@ XPOLL_GENERIC_BACKEND_CPPFLAGS = \
     '-Dlikely(x)=(x)' \
     '-Dunlikely(x)=(x)'
 
-# Guards against a hang rather than a failure: the poll() backend scans
-# its own registry, so a mistake there can spin instead of returning.
-
 XPOLL_GENERIC_BACKEND_TIMEOUT = 3
 
-check-xpoll-generic-backend:
-	@status=0; \
+check-xpoll-generic-backend: $(XPOLL_LDADD)
+	status=0; \
 	for t in $(XPOLL_TESTS); do \
 	    $(CC) $(AM_CFLAGS) $(CFLAGS) $(AM_CPPFLAGS) $(CPPFLAGS) \
 	        $(XPOLL_GENERIC_BACKEND_CPPFLAGS) -I$(srcdir) \
 	        -o generic-$$t $(srcdir)/$$t.c \
-	        $(top_srcdir)/src/event/xpoll.c $(top_srcdir)/src/utils/utils.c \
+	        $(top_srcdir)/src/event/xpoll.c $(XPOLL_LDADD) \
 	        || { echo "FAIL: $$t (generic backend, build)"; status=1; continue; }; \
-	    if timeout $(XPOLL_GENERIC_BACKEND_TIMEOUT) ./generic-$$t >/dev/null 2>&1; \
+	    if timeout $(XPOLL_GENERIC_BACKEND_TIMEOUT) $(VALGRIND_WRAPPER) ./generic-$$t >"$$t.log" 2>&1; \
 	    then echo "PASS: $$t (generic backend)"; \
 	    else rc=$$?; status=1; \
 	        if test $$rc -eq 124; then \

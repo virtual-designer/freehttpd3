@@ -1,8 +1,6 @@
 SUBDIRS = event hash
 noinst_HEADERS = test-common.h
 
-VALGRIND_WRAPPER = $(abs_top_srcdir)/build-aux/valgrind
-
 check-valgrind:
 	@if test -z "$(VALGRIND)"; then \
 	    echo "valgrind not found; install it to use this target" >&2; \

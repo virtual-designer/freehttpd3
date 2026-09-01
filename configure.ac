@@ -36,6 +36,7 @@ AM_PROG_AR
 AC_PROG_RANLIB
 AC_PATH_PROG([VALGRIND], [valgrind])
 AC_PATH_PROG([GPG], [gpg])
+AC_SUBST([VALGRIND_WRAPPER], ['$''('abs_top_srcdir')'/build-aux/valgrind])
 
 dnl Checks for libraries.
 
