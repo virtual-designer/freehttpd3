@@ -1,6 +1,8 @@
+#include <errno.h>
 #include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define FH_LOG_MODULE_NAME "main"
 
@@ -38,7 +40,8 @@ usage (void)
 static void
 show_version (void)
 {
-    fprintf (stdout, PACKAGE_NAME " version " PACKAGE_VERSION " (" FH_TARGET_SYSTEM_TYPE ")\n");
+    fprintf (stdout, PACKAGE_NAME " version " PACKAGE_VERSION
+                                  " (" FH_TARGET_SYSTEM_TYPE ")\n");
     fprintf (stdout, "License GPLv3.0+: This is free software.\n");
     fprintf (stdout, "\n");
     fprintf (stdout, "Written by Ar Rakin.\n");
@@ -71,6 +74,8 @@ main (int argc, char **argv)
                 exit (EXIT_FAILURE);
         }
     }
+
+    fh_log_init ();
 
     const struct fh_config config = {
         .vhost_count = 2,
@@ -112,7 +117,7 @@ main (int argc, char **argv)
 
     if (!server)
     {
-        perror ("Unable to create server");
+        fh_pr_err ("Unable to create server: %s", strerror (errno));
         return EXIT_FAILURE;
     }
 

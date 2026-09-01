@@ -4,9 +4,13 @@
 #if defined(__GNUC__) || defined(__clang__)
 #    define likely(x) (__builtin_expect ((x), 1))
 #    define unlikely(x) (__builtin_expect ((x), 0))
+
+#define ATTRIBUTE_FORMAT_PRINTF(arg1, arg2) __attribute__((format(printf, (arg1), (arg2))))
 #else
 #    define likely(x) (x)
 #    define unlikely(x) (x)
+
+#define ATTRIBUTE_FORMAT_PRINTF(arg1, arg2)
 #endif
 
 #if defined(__linux__)
