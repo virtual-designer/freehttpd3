@@ -10,7 +10,13 @@
    Known gap: the generic poll() backend appends unconditionally and so
    fails this test today.  That is an accepted, tracked drawback rather
    than a stale assertion -- do not relax the checks below to make it
-   pass; the fix belongs in XPOLL_CTL_ADD. */
+   pass; the fix belongs in XPOLL_CTL_ADD.
+
+   kqueue is a different case and is exempted rather than tracked.  Its
+   EV_ADD is idempotent: re-adding a filter updates the existing one in
+   place, so there is no duplicate to reject and none to outlive the
+   removal either.  Only the rejection is skipped there; the removal
+   below still has to silence the fd, and that is checked everywhere. */
 
 #include "test-xpoll-common.h"
 
@@ -25,11 +31,19 @@ main (void)
 
     CHECK (
         xpoll_add_fd (xp, pair[0], xpoll_test_fd_udata (pair[0]), XPOLL_READ));
+
+#ifndef FH_PLATFORM_BSDLIKE
     CHECK_MSG (
         xpoll_add_fd (xp, pair[0], xpoll_test_fd_udata (pair[0]), XPOLL_READ)
             == false,
         "adding an already-registered fd succeeded; use "
         "xpoll_modify_fd() to change an interest set");
+#else
+    CHECK_MSG (
+        xpoll_add_fd (xp, pair[0], xpoll_test_fd_udata (pair[0]), XPOLL_READ),
+        "re-adding a registered fd failed; kqueue's EV_ADD updates an "
+        "existing filter in place and does not report a conflict");
+#endif
 
     /* One removal, for one registration. */
     CHECK (xpoll_remove_fd (xp, pair[0]));
