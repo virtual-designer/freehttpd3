@@ -162,12 +162,14 @@ HT_NAME (htable_grow) (htable_t *table)
 }
 
 bool
-HT_NAME (htable_set) (htable_t *table, const HT_KEY_TYPE key, void *data)
+HT_NAME (htable_set_with_flag) (htable_t *table, const HT_KEY_TYPE key,
+                                void *data, bool *flag_created)
 {
     if ((table->entry_next_insert >= table->entry_capacity
          || (table->count + 1) * 4 >= table->index_capacity * 3)
         && !HT_NAME (htable_grow) (table))
     {
+        *flag_created = false;
         return false;
     }
 
@@ -203,6 +205,7 @@ HT_NAME (htable_set) (htable_t *table, const HT_KEY_TYPE key, void *data)
         if (HT_KEY_EQUAL_CB (entry->key, key))
         {
             entry->data = data;
+            *flag_created = false;
             return true;
         }
 
@@ -212,7 +215,10 @@ HT_NAME (htable_set) (htable_t *table, const HT_KEY_TYPE key, void *data)
 
 hash_loop_end:
     if (insert_target_hash == UINT64_MAX)
+    {
+        *flag_created = false;
         return false;
+    }
 
     HT_KEY_TYPE dup_key = HT_KEY_DUP_CB (key);
     HT_KEY_DUP_CHECK (dup_key);
@@ -264,7 +270,16 @@ hash_loop_end:
     }
 
     table->count++;
+    *flag_created = true;
     return true;
+}
+
+bool
+HT_NAME (htable_set) (struct HT_NAME (htable) * table, const HT_KEY_TYPE key,
+                      void *data)
+{
+    bool flag = false;
+    return HT_NAME (htable_set_with_flag) (table, key, data, &flag);
 }
 
 void *
@@ -311,7 +326,7 @@ HT_NAME (htable_get_with_flag) (const htable_t *table, const HT_KEY_TYPE key,
 void *
 HT_NAME (htable_get) (const htable_t *table, const HT_KEY_TYPE key)
 {
-    bool flag;
+    bool flag = false;
     return HT_NAME (htable_get_with_flag) (table, key, &flag);
 }
 

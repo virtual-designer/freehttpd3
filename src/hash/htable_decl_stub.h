@@ -12,6 +12,8 @@ bool HT_NAME (htable_has) (const struct HT_NAME (htable) * table,
                            const HT_KEY_TYPE key);
 bool HT_NAME (htable_set) (struct HT_NAME (htable) * table,
                            const HT_KEY_TYPE key, void *data);
+bool HT_NAME (htable_set_with_flag) (struct HT_NAME (htable) * table,
+                           const HT_KEY_TYPE key, void *data, bool *flag_created);
 size_t HT_NAME (htable_count) (const struct HT_NAME (htable) * table);
 void *HT_NAME (htable_delete_with_flag) (struct HT_NAME (htable) * table,
                                          const HT_KEY_TYPE key, bool *flag);
