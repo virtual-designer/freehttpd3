@@ -1,11 +1,39 @@
 01-09-2026  Ar Rakin <rakinar2@osndevs.org>
 
+     [*] test(xpoll): fix broken fd tests on bsd
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+     [*] feat(xpoll): add user data support
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+     [*] refactor: better log API
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+     [*] merge: branch 'main' of github.com:virtual-designer/freehttpd3
+         
+
+     [*] fix: issues and reorganize test files
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
      [*] fix: compiler warnings
          
          Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
          
 
 01-09-2026  Conventional Release Action <rakinar2@onesoftnet.eu.org>
+
+     [*] release: v3.29.1 [skip ci]
+         
+         Signed-off-by: Conventional Release Action <rakinar2@onesoftnet.eu.org>
+         
 
      [*] release: v3.29.0 [skip ci]
          
