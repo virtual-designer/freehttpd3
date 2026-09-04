@@ -41,21 +41,45 @@ jobs:
           make -j$(nproc)
           make install
 
-      - name: Test
+      - name: Check
+        run:
+          make check
+        
+      - name: Upload Check Artifacts
+        id: upload_check
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: check-artifacts-${{ matrix.os }}.zip
+          path: |
+            tests/
+
+      - name: Check (Valgrind)
+        run:
+          make check-valgrind
+        
+      - name: Upload Valgrind Check Artifacts
+        id: upload_check_valgrind
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: check-valgrind-artifacts-${{ matrix.os }}.zip
+          path: |
+            tests/
+
+      - name: Distcheck
         run: |
           make distcheck
-          rm -rf freehttpd-*/ *.tar.*
 
       - name: Upload Artifacts
-        id: upload
+        id: upload_build
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: build-artifacts-${{ matrix.os }}.zip
           path: |
             build/
-            tests/**/logs/
-            tests/vgcore.*
+            freehttpd-*/
             *.tar.gz
             *.tar.bz2
             *.tar.xz
