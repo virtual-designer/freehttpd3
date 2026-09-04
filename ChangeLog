@@ -1,5 +1,15 @@
 04-09-2026  Ar Rakin <rakinar2@osndevs.org>
 
+     [*] fix: distclean broken
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+     [*] fix: CI checks
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
      [*] merge: branch 'main' of github.com:virtual-designer/freehttpd3
          
 
@@ -11,6 +21,13 @@
      [*] feat: migrate to libtest testing framework
          
          Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+04-09-2026  Conventional Release Action <rakinar2@onesoftnet.eu.org>
+
+     [*] release: v3.33.0 [skip ci]
+         
+         Signed-off-by: Conventional Release Action <rakinar2@onesoftnet.eu.org>
          
 
 01-09-2026  Conventional Release Action <rakinar2@onesoftnet.eu.org>
