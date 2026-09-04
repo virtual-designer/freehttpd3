@@ -4,6 +4,9 @@
 #include <stdlib.h>
 #include "assert.h"
 
+extern const char *libtest_suite_name;
+extern const char *libtest_test_case_name;
+
 #define LIBTEST_CONFIG_SYMBOL libtest_config
 
 #define define_test_case(cb) & (struct libtest_test_case) { .name = (#cb), .callback = &(cb) }

@@ -2,6 +2,9 @@
 
 #include "assert.h"
 
+extern const char *libtest_suite_name;
+extern const char *libtest_test_case_name;
+
 static size_t assert_fail_count = 0;
 static size_t assert_success_count = 0;
 
@@ -20,6 +23,8 @@ assert_internal (const char *filename, int line, const char *function_name,
 
     fprintf (stderr, "     [!] Assertion failed:\n");
     fprintf (stderr, "         expression: %s\n", expr);
+    fprintf (stderr, "         test:       %s::%s\n", libtest_suite_name,
+             libtest_test_case_name);
     fprintf (stderr, "         at:         %s:%i [%s]\n", filename, line,
              function_name);
 

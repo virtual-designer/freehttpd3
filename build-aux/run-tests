@@ -13,10 +13,20 @@ if test -n "$MAKEFLAGS"; then
     set_jobs_next=0
 
     for flag in $MAKEFLAGS; do
-        test "$set_jobs_next" -eq 1 && parallel_jobs="$flag"
+        test "$set_jobs_next" -eq 1 && parallel_jobs="$flag" && set_jobs_next=0 && continue
 
         case "$flag" in
-            --jobs|-j)
+            -j)
+                if command -v nproc >/dev/null 2>&1; then
+                    parallel_jobs=`nproc`
+                else
+                    parallel_jobs=1
+                fi
+
+                continue
+                ;;
+
+            --jobs)
                 set_jobs_next=1
                 continue
                 ;;
@@ -57,18 +67,21 @@ usage ()
     printf "Run libtest suites.\n"
     printf "\n"
     printf "Usage:\n"
-    printf "  %s [options...] [tests...]\n" "$me"
+    printf "  %s [OPTION...] [TEST...]\n" "$me"
+    printf "\n"
+    printf "Only plain test suite names for TEST arguments in the current \n"
+    printf "working directory are supported. Paths as TEST is not supported.\n"
     printf "\n"
     printf "Options:\n"
-    printf "  -h, --help             Show this help and exit.\n"
-    printf "  -v, --version          Show version information and exit.\n"
-    printf "  -j, --parallel-jobs=N  Run N test suites in parallel.\n"
-    printf "  -L, --log-dir=DIR      Output a copy of the logs (stdout, stderr)\n"
-    printf "                         into individual files per test suite\n"
-    printf "                         inside DIR.\n"
-    printf "      --clear-logs       Delete the log directory passed to --log-dir.\n"
-    printf "                         This option mainly exists for easy interop \n"
-    printf "                         with make."
+    printf "  -h, --help               Show this help and exit.\n"
+    printf "  -V, --version            Show version information and exit.\n"
+    printf "  -j, --parallel-jobs <N>  Run N test suites in parallel.\n"
+    printf "  -L, --log-dir <DIR>      Output a copy of the logs (stdout, stderr)\n"
+    printf "                           into individual files per test suite\n"
+    printf "                           inside DIR.\n"
+    printf "      --clear-logs         Delete the log directory passed to --log-dir.\n"
+    printf "                           This option mainly exists for easy interop \n"
+    printf "                           with make."
     printf "\n"
     printf "Bug reports can be sent directly to <rakinar2@osndevs.org>.\n"
 }
@@ -93,7 +106,10 @@ while test $# -gt 0; do
 
         -j|--parallel-jobs)
             test -z "$2" && print_error "'%s' requires an argument" "$1" && exit 1
-            test "$2" -lt 1 && print_error "'%s' a nonzero positive integer argument" "$1" && exit 1
+            test "$2" -ge 1 2>/dev/null || { 
+                print_error "'%s' a nonzero positive integer argument" "$1" && exit 1 
+            }
+
             parallel_jobs="$2"
             shift 2
             ;;
@@ -135,6 +151,8 @@ if test $clear_logs -eq 1; then
     exit 0
 fi
 
+child_pids=""
+
 passed_suite_count=0
 failed_suite_count=0
 total_passed_count=0
@@ -144,7 +162,19 @@ date=`date '+%s'`
 tmp_list=""
 tmp_fifo_list=""
 
-trap 'code=$?; test -n "$tmp_list" && rm -f -- $tmp_list $tmp_fifo_list; exit $code;' EXIT INT TERM
+on_signal ()
+{
+    kill -TERM -- $(for pid in $child_pids; do printf '-%s ' "$pid"; done) 2>/dev/null || true
+    on_exit
+}
+
+on_exit ()
+{
+    test -n "$tmp_list" && rm -f -- $tmp_list $tmp_fifo_list
+}
+
+trap 'code=$?; on_exit; exit $code;' EXIT
+trap 'code=$?; on_signal; exit $code;' INT TERM
 
 if test -n "$log_dir"; then
     enable_color=0
@@ -248,6 +278,10 @@ exec_test_internal ()
 
 main ()
 {
+    counter=0
+
+    set -m
+
     for test_program in "$@"; do
         tmp=`mktemp 2>/dev/null`
 
@@ -262,10 +296,11 @@ main ()
         : > "$tmp"
 
         if test -n "$log_dir"; then
-            log_file="$log_dir/$test_program.log"
-            : > "$log_file"
+            log_file="$log_dir/${test_program}_${counter}.log"
+            tmp_fifo="${TMPDIR:-/tmp}/libtest-${test_program}_${counter}.$$"
 
-            tmp_fifo="${TMPDIR:-/tmp}/libtest-$test_program.$$"
+            counter=`expr $counter + 1`
+            : > "$log_file"
             
             if ! mkfifo "$tmp_fifo"; then
                 echo "error: unable to create FIFO" >> "$log_file"
@@ -275,6 +310,9 @@ main ()
             tmp_fifo_list="$tmp_fifo_list $tmp_fifo"
 
             tee -a "$log_file" < "$tmp_fifo" &
+            pid=$!
+            child_pids="$child_pids $pid"
+
             exec_test_internal > "$tmp_fifo" 2>&1 &
             pid=$!
         else
@@ -282,7 +320,7 @@ main ()
             pid=$!
         fi
 
-        pid=$!
+        child_pids="$child_pids $pid"
         test_pid_entries="$test_pid_entries $pid|$test_program|$tmp|$log_file"
         wait_count=`expr $wait_count + 1`
 
@@ -294,6 +332,8 @@ main ()
     if test $wait_count -gt 0; then
         wait_for_tests
     fi
+
+    wait
 
     printf "\n"
     printf "\n"

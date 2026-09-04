@@ -51,6 +51,12 @@ static bool enable_verbose_mode = false;
 static char *report_file_path = NULL;
 static char *argv0_src = NULL;
 
+const char **program_argv = NULL;
+int program_argc = 0;
+
+const char *libtest_suite_name = NULL;
+const char *libtest_test_case_name = NULL;
+
 static void
 print_status (const char *status, int pad_len, const char *pad,
               const char *color, const char *text)
@@ -61,22 +67,22 @@ print_status (const char *status, int pad_len, const char *pad,
 }
 
 static void
-print_test_case_status (const char *suite_name, const char *name,
+print_test_case_status (const char *name,
                         enum test_status status)
 {
     fprintf (stdout, "  %s%-8s%s %s::%s%s%s\n",
              enable_color ? test_status_color_lut[status] : "",
-             test_status_lut[status], enable_color ? "\033[0m" : "", suite_name,
+             test_status_lut[status], enable_color ? "\033[0m" : "", libtest_suite_name,
              enable_color ? "\033[1;38m" : "", name,
              enable_color ? "\033[0m" : "");
 }
 
 static void
-print_summary (const char *suite_name)
+print_summary (void)
 {
     fprintf (stdout, "  %s%-8s%s %s - %s%zu%s passed, %s%zu%s failed\n",
              enable_color ? "\033[2;37m" : "", "SUMMARY",
-             enable_color ? "\033[0m" : "", suite_name,
+             enable_color ? "\033[0m" : "", libtest_suite_name,
              enable_color ? "\033[1;32m" : "", passed_count,
              enable_color ? "\033[0m" : "", enable_color ? "\033[1;31m" : "",
              failed_count, enable_color ? "\033[0m" : "");
@@ -225,13 +231,13 @@ static void
 usage (void)
 {
     fprintf (stdout,
-             "Usage: %s [-r|--report=PATH] [-c|--color=<1|0>] [ARGV...]\n",
+             "Usage: %s <-r|--report=PATH> [-c|--color=<1|0>] [ARGV...]\n",
              argv0_src);
 }
 
 int
 main (int argc, char **argv)
-{
+{   
     enable_color = isatty (STDOUT_FILENO) && isatty (STDIN_FILENO);
 
     for (;;)
@@ -261,12 +267,21 @@ main (int argc, char **argv)
         }
     }
 
+    if (!report_file_path)
+    {
+        fprintf (stderr, "%s: a report file path must be provided\n", argv[0]);
+        exit (EXIT_FAILURE);
+    }
+
+    program_argc = argc - optind;
+    program_argv = (const char **) argv + optind;
+
     const struct libtest_config *config = &LIBTEST_CONFIG_SYMBOL;
     const struct libtest_test_case **test_cases = config->test_cases;
 
     argv0_src = strdup (argv[0]);
     char *argv0 = argv0_src;
-    char *suite_name = basename (argv0);
+    libtest_suite_name = basename (argv0);
 
     int fds[2];
 
@@ -297,27 +312,28 @@ main (int argc, char **argv)
         setvbuf (stdout, NULL, _IOLBF, 0);
 
         print_status (enable_verbose_mode ? "SUITE" : "SUITE   ", 0, "",
-                      "\033[1;34m", suite_name);
+                      "\033[1;34m", libtest_suite_name);
 
         if (!run_hook (config->before_all))
             exit_err = true;
 
         for (size_t i = 0; test_cases[i]; i++)
         {
+            const char *name = test_cases[i]->name;
+            libtest_test_case_name = name;
+
             if (!run_hook (config->before_each))
                 exit_err = true;
 
             set_assert_fail_count (0);
             set_assert_success_count (0);
-
-            const char *name = test_cases[i]->name;
-            print_test_case_status (suite_name, name, STATUS_RUN);
+            print_test_case_status (name, STATUS_RUN);
 
             const int rc = test_cases[i]->callback ();
 
             const bool passed = rc == 0 && get_assert_fail_count () == 0;
 
-            print_test_case_status (suite_name, name,
+            print_test_case_status (name,
                                     passed ? STATUS_PASS : STATUS_FAIL);
 
             if (!passed)
@@ -325,7 +341,7 @@ main (int argc, char **argv)
 
             if (write (fds[1], &passed, sizeof passed) != sizeof passed)
             {
-                fprintf (stderr, "%s: unable to report '%s': %s\n", suite_name,
+                fprintf (stderr, "%s: unable to report '%s': %s\n", libtest_suite_name,
                          name, strerror (errno));
                 exit_err = true;
             }
@@ -383,7 +399,7 @@ main (int argc, char **argv)
 
         close (fds[0]);
 
-        print_summary (suite_name);
+        print_summary ();
 
         int exit_code = WEXITSTATUS (status);
         int signal = WTERMSIG (status);
