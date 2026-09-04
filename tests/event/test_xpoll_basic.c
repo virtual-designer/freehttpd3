@@ -12,7 +12,7 @@ static int
 test_xpoll_create (void)
 {
     xp = xpoll_create (XPOLL_CLOEXEC);
-    return assert_false (!XPOLL_XP_ERR (xp), "failed to create xpoll");
+    return assert_false (XPOLL_XP_ERR (xp), "failed to create xpoll");
 }
 
 static int
