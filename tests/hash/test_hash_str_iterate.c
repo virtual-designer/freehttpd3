@@ -15,11 +15,16 @@
 #include <string.h>
 
 #include "hash/str_htable.h"
-#include "test-common.h"
+#include "libtest.h"
 
 #define ORDER_N 4
 #define EXTRA 200
 #define TOTAL (ORDER_N + EXTRA)
+
+static str_htable_t *table;
+
+static const uint64_t order_idx[ORDER_N] = { 2, 0, 3, 1 };
+static char overwritten[] = "overwritten";
 
 static void
 make_key (char *buf, size_t bufsize, uint64_t n)
@@ -27,96 +32,139 @@ make_key (char *buf, size_t bufsize, uint64_t n)
     snprintf (buf, bufsize, "k%llu", (unsigned long long) n);
 }
 
-int
-main (void)
+static int
+before_all (void)
 {
-    str_htable_t *table = str_htable_create (8);
-    CHECK (table != NULL);
+    table = str_htable_create (8);
 
-    /* An empty table must iterate zero times. */
+    return assert_true (table != NULL, "failed to create the table");
+}
+
+static int
+after_all (void)
+{
+    str_htable_free (table);
+
+    return ASSERT_OK;
+}
+
+/* An empty table must iterate zero times. */
+
+static int
+test_hash_str_iterate_empty (void)
+{
     size_t visited = 0;
+
     str_htable_foreach (table, it)
         visited++;
-    CHECK (visited == 0);
 
-    /* Insert a handful of keys in a deliberately unsorted order,
-       staying well under the initial entry capacity (6, for an
-       index_capacity of 8) so nothing forces a rehash here. */
-    static const uint64_t order_idx[ORDER_N] = { 2, 0, 3, 1 };
+    return check_equal (visited, 0);
+}
+
+/* Insert a handful of keys in a deliberately unsorted order, staying
+   well under the initial entry capacity (6, for an index_capacity of 8)
+   so nothing forces a rehash here. */
+
+static int
+test_hash_str_iterate_insertion_order (void)
+{
     char key[32];
 
     for (int i = 0; i < ORDER_N; i++)
     {
         make_key (key, sizeof (key), order_idx[i]);
-        CHECK (str_htable_set (table, key,
-                               (void *) (uintptr_t) (order_idx[i] + 1)));
+        check_true (str_htable_set (table, key,
+                                    (void *) (uintptr_t) (order_idx[i] + 1)));
     }
 
-    CHECK (str_htable_count (table) == ORDER_N);
+    check_equal (str_htable_count (table), ORDER_N);
 
     int pos = 0;
+
     str_htable_foreach (table, it)
     {
-        CHECK_MSG (pos < ORDER_N,
-                   "iterated past the %d inserted entries", ORDER_N);
+        assert_true (pos < ORDER_N, "iterated past the %d inserted entries",
+                     ORDER_N);
 
         if (pos < ORDER_N)
         {
             make_key (key, sizeof (key), order_idx[pos]);
-            CHECK (strcmp (it.entry->key, key) == 0);
-            CHECK (it.entry->data
-                   == (void *) (uintptr_t) (order_idx[pos] + 1));
-            CHECK (strcmp (ht_iter_get_entry (table, it).key, key) == 0);
+            check_equal (strcmp (it.entry->key, key), 0);
+            check_true (it.entry->data
+                        == (void *) (uintptr_t) (order_idx[pos] + 1));
+            check_equal (strcmp (ht_iter_get_entry (table, it).key, key), 0);
         }
 
         pos++;
     }
-    CHECK (pos == ORDER_N);
 
-    /* Overwriting an existing key's data must not move it within the
-       iteration order or change the entry count. */
-    static char overwritten[] = "overwritten";
+    check_equal (pos, ORDER_N);
+
+    return ASSERT_OK;
+}
+
+/* Overwriting an existing key's data must not move it within the
+   iteration order or change the entry count. */
+
+static int
+test_hash_str_iterate_after_overwrite (void)
+{
+    char key[32];
+
     make_key (key, sizeof (key), order_idx[1]);
-    CHECK (str_htable_set (table, key, overwritten));
-    CHECK (str_htable_count (table) == ORDER_N);
+    check_true (str_htable_set (table, key, overwritten));
+    check_equal (str_htable_count (table), ORDER_N);
 
-    pos = 0;
+    int pos = 0;
+
     str_htable_foreach (table, it)
     {
         if (pos < ORDER_N)
         {
             make_key (key, sizeof (key), order_idx[pos]);
-            CHECK (strcmp (it.entry->key, key) == 0);
+            check_equal (strcmp (it.entry->key, key), 0);
 
-            void *expected_data = order_idx[pos] == order_idx[1]
-                ? overwritten
-                : (void *) (uintptr_t) (order_idx[pos] + 1);
-            CHECK (it.entry->data == expected_data);
+            void *expected_data
+                = order_idx[pos] == order_idx[1]
+                      ? overwritten
+                      : (void *) (uintptr_t) (order_idx[pos] + 1);
+
+            check_true (it.entry->data == expected_data);
         }
 
         pos++;
     }
-    CHECK (pos == ORDER_N);
 
-    /* Restore the formulaic data (idx + 1) that the growth-phase scan
-       below assumes for every key, undoing the overwrite above. */
+    check_equal (pos, ORDER_N);
+
+    return ASSERT_OK;
+}
+
+/* Force the table through several grow()/rehash cycles and check that
+   iteration still visits every live key exactly once with the right
+   data, and that each duplicated key string survived the rehash intact.
+   Order is intentionally not asserted here, for the same reason as in
+   test_hash_int_iterate.c. */
+
+static int
+test_hash_str_iterate_after_growth (void)
+{
+    char key[32];
+
+    /* Restore the formulaic data (idx + 1) that the scan below assumes
+       for every key, undoing the overwrite from the previous case. */
     make_key (key, sizeof (key), order_idx[1]);
-    CHECK (str_htable_set (table, key,
-                           (void *) (uintptr_t) (order_idx[1] + 1)));
+    check_true (
+        str_htable_set (table, key, (void *) (uintptr_t) (order_idx[1] + 1)));
 
-    /* Force the table through several grow()/rehash cycles and check
-       that iteration still visits every live key exactly once with
-       the right data, and that each duplicated key string survived
-       the rehash intact. Order is intentionally not asserted here,
-       for the same reason as in test_hash_int_iterate.c. */
     for (uint64_t i = ORDER_N; i < TOTAL; i++)
     {
         make_key (key, sizeof (key), i);
-        CHECK_MSG (str_htable_set (table, key, (void *) (uintptr_t) (i + 1)),
-                   "set failed for key %s", key);
+        assert_true (str_htable_set (table, key, (void *) (uintptr_t) (i + 1)),
+                     "set failed for key %s", key);
     }
 
-    CHECK (str_htable_count (table) == TOTAL);
+    check_equal (str_htable_count (table), TOTAL);
 
     bool seen[TOTAL];
     memset (seen, 0, sizeof (seen));
@@ -124,35 +172,48 @@ main (void)
 
     str_htable_foreach (table, it)
     {
-        CHECK_MSG (++steps <= TOTAL + 16,
-                   "iteration exceeded the expected number of entries "
-                   "(possible cycle in the entry list)");
+        assert_true (++steps <= TOTAL + 16,
+                     "iteration exceeded the expected number of entries "
+                     "(possible cycle in the entry list)");
 
         if (steps > TOTAL + 16)
             break;
 
-        CHECK_MSG (it.entry->key[0] == 'k',
-                   "iterated key %s does not look like ours", it.entry->key);
+        assert_equal (it.entry->key[0], 'k',
+                      "iterated key %s does not look like ours",
+                      it.entry->key);
 
         uint64_t idx = strtoull (it.entry->key + 1, NULL, 10);
-        CHECK_MSG (idx < TOTAL, "iterated an unexpected key %s",
-                   it.entry->key);
+
+        assert_true (idx < TOTAL, "iterated an unexpected key %s",
+                     it.entry->key);
 
         if (idx < TOTAL)
         {
-            CHECK_MSG (!seen[idx], "key %s was visited more than once",
-                       it.entry->key);
+            assert_false (seen[idx], "key %s was visited more than once",
+                          it.entry->key);
             seen[idx] = true;
-            CHECK (it.entry->data == (void *) (uintptr_t) (idx + 1));
-            CHECK (str_htable_get (table, it.entry->key) == it.entry->data);
+            check_true (it.entry->data == (void *) (uintptr_t) (idx + 1));
+            check_true (str_htable_get (table, it.entry->key)
+                        == it.entry->data);
         }
     }
 
     for (uint64_t i = 0; i < TOTAL; i++)
-        CHECK_MSG (seen[i], "key k%llu was never visited",
-                   (unsigned long long) i);
+        assert_true (seen[i], "key k%llu was never visited",
+                     (unsigned long long) i);
 
-    str_htable_free (table);
-
-    return test_report ();
+    return ASSERT_OK;
 }
+
+const struct libtest_config LIBTEST_CONFIG_SYMBOL = {
+    .test_cases = (const struct libtest_test_case *[]) {
+        define_test_case(test_hash_str_iterate_empty),
+        define_test_case(test_hash_str_iterate_insertion_order),
+        define_test_case(test_hash_str_iterate_after_overwrite),
+        define_test_case(test_hash_str_iterate_after_growth),
+        NULL,
+    },
+    .before_all = &before_all,
+    .after_all = &after_all,
+};

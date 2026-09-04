@@ -1,4 +1,5 @@
-SUBDIRS = src tests
+SUBDIRS = src
+DIST_SUBDIRS = $(SUBDIRS) libtest tests
 EXTRA_DIST = \
 	README \
 	NEWS \
@@ -7,6 +8,7 @@ EXTRA_DIST = \
 	ChangeLog \
 	.tarball-version \
 	build-aux/valgrind \
+	build-aux/run-tests \
 	build-aux/genchangelog \
 	build-aux/update-license-comments \
 	build-aux/git-version-gen
@@ -14,7 +16,12 @@ EXTRA_DIST = \
 ACLOCAL_AMFLAGS = -I m4
 GPG_LOCAL_USER ?=
 
-vcs-clean: distclean
+backupclean:
+	for dir in $(SUBDIRS) .; do \
+		rm -f $$dir/*~; \
+	done
+
+vcsclean: backupclean distclean
 	for dir in $(SUBDIRS) .; do \
 		rm -rf \
 			$$dir/autom4te.cache \
@@ -27,15 +34,24 @@ vcs-clean: distclean
 			$$dir/config.h \
 			$$dir/config.h.in \
 			$$dir/stamp-h1 \
-			$$dir/*~ \
 			$$dir/.deps \
 			$$dir/.dirstamp; \
 	done
 
-check-valgrind:
-	$(MAKE) -C tests check-valgrind
+check-local:
+	$(MAKE) $(AM_MAKEFLAGS) -C libtest
+	$(MAKE) $(AM_MAKEFLAGS) -C tests check
 
-.PHONY: check-valgrind vcs-clean dist-fhttpd dist-fhttpd-sign changelog
+check-valgrind:
+	@if test -z "$(VALGRIND)"; then \
+	    echo "valgrind not found; install it to use this target" >&2; \
+	    exit 1; \
+	fi; \
+	VALGRIND="$(VALGRIND)" TEST_INTERPRETER='$(VALGRIND_WRAPPER)' \
+	    $(MAKE) $(AM_MAKEFLAGS) check
+
+
+.PHONY: check-valgrind vcsclean backupclean dist-fhttpd dist-fhttpd-sign changelog
 
 .tarball-version:
 	echo "@VERSION@" > .tarball-version

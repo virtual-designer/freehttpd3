@@ -7,7 +7,6 @@
 #include <unistd.h>
 
 #include "event/xpoll.h"
-#include "test-common.h"
 
 /* Reading an event back is not spelled the same everywhere: on Linux
    xpoll_event_t is epoll's own struct, whose pointer shares a union with

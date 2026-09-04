@@ -5,3 +5,4 @@
 !update-license-comments
 !git-version-gen
 !org-doc-gen
+!run-tests

@@ -10,37 +10,57 @@
 
 #include <fcntl.h>
 
-#include "test-xpoll-common.h"
+#include "libtest.h"
+#include "test_xpoll_common.h"
 
-int
-main (void)
+static int
+test_xpoll_cloexec_flag_is_set (void)
 {
+    xpoll_t xp = xpoll_create (XPOLL_CLOEXEC);
+
+    assert_false (XPOLL_XP_ERR (xp), "failed to create xpoll");
+
 #ifdef FH_PLATFORM_LINUX
-    xpoll_t xp = xpoll_create (XPOLL_CLOEXEC);
-    CHECK (!XPOLL_XP_ERR (xp));
-
     int flags = fcntl (xp, F_GETFD);
-    CHECK (flags >= 0);
-    CHECK_MSG (flags & FD_CLOEXEC,
-               "XPOLL_CLOEXEC did not set FD_CLOEXEC (F_GETFD=0x%x)", flags);
 
-    xpoll_close (xp);
-
-    xp = xpoll_create ((enum xpoll_create_flag) 0);
-    CHECK (!XPOLL_XP_ERR (xp));
-
-    flags = fcntl (xp, F_GETFD);
-    CHECK (flags >= 0);
-    CHECK_MSG ((flags & FD_CLOEXEC) == 0,
-               "FD_CLOEXEC set without XPOLL_CLOEXEC (F_GETFD=0x%x)", flags);
-
-    xpoll_close (xp);
-#else
-    /* No descriptor reachable from here; only creation is checkable. */
-    xpoll_t xp = xpoll_create (XPOLL_CLOEXEC);
-    CHECK (!XPOLL_XP_ERR (xp));
-    xpoll_close (xp);
+    check_true (flags >= 0);
+    assert_true (flags & FD_CLOEXEC,
+                 "XPOLL_CLOEXEC did not set FD_CLOEXEC (F_GETFD=0x%x)", flags);
 #endif
 
-    return test_report ();
+    xpoll_close (xp);
+
+    return ASSERT_OK;
 }
+
+/* No descriptor is reachable from here on the other backends, so only
+   creation is checkable there. */
+
+static int
+test_xpoll_cloexec_flag_is_absent (void)
+{
+    xpoll_t xp = xpoll_create ((enum xpoll_create_flag) 0);
+
+    assert_false (XPOLL_XP_ERR (xp), "failed to create xpoll");
+
+#ifdef FH_PLATFORM_LINUX
+    int flags = fcntl (xp, F_GETFD);
+
+    check_true (flags >= 0);
+    assert_equal (flags & FD_CLOEXEC, 0,
+                  "FD_CLOEXEC set without XPOLL_CLOEXEC (F_GETFD=0x%x)",
+                  flags);
+#endif
+
+    xpoll_close (xp);
+
+    return ASSERT_OK;
+}
+
+const struct libtest_config LIBTEST_CONFIG_SYMBOL = {
+    .test_cases = (const struct libtest_test_case *[]) {
+        define_test_case(test_xpoll_cloexec_flag_is_set),
+        define_test_case(test_xpoll_cloexec_flag_is_absent),
+        NULL,
+    },
+};

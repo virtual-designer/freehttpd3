@@ -39,6 +39,8 @@ AC_PATH_PROG([GPG], [gpg])
 AC_SUBST([VALGRIND_WRAPPER], ['$''('abs_top_srcdir')'/build-aux/valgrind])
 
 dnl Checks for libraries.
+LT_INIT
+LIBTEST_INIT
 
 dnl Checks for header files.
 
@@ -86,6 +88,7 @@ AC_CONFIG_FILES([Makefile
                  src/log/Makefile
                  src/utils/Makefile
                  src/progs/Makefile
+                 libtest/Makefile
                  tests/Makefile
                  tests/event/Makefile
                  tests/hash/Makefile])

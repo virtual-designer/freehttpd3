@@ -9,53 +9,101 @@
    to stop the removal early, the fd would stay registered for writes and
    keep being reported. */
 
-#include "test-xpoll-common.h"
+#include "libtest.h"
+#include "test_xpoll_common.h"
 
-int
-main (void)
+static xpoll_t xp;
+static fd_t pair[2];
+
+static int
+before_all (void)
 {
-    xpoll_t xp = xpoll_create (XPOLL_CLOEXEC);
-    CHECK (!XPOLL_XP_ERR (xp));
+    xp = xpoll_create (XPOLL_CLOEXEC);
+    assert_false (XPOLL_XP_ERR (xp), "failed to create xpoll");
+    assert_true (xpoll_test_socketpair (pair), "failed to create socket pair");
+    assert_true (
+        xpoll_add_fd (xp, pair[0], xpoll_test_fd_udata (pair[0]), XPOLL_READ),
+        "fd add failed");
 
-    fd_t pair[2];
-    CHECK (xpoll_test_socketpair (pair));
-    CHECK (
-        xpoll_add_fd (xp, pair[0], xpoll_test_fd_udata (pair[0]), XPOLL_READ));
+    return ASSERT_OK;
+}
 
-    /* Make the fd both readable and writable, so that a stale read
-       registration is visible in the results. */
-    CHECK (xpoll_test_write_byte (pair[1]));
-
-    xpoll_event_t events[8];
-    int ret = xpoll_test_wait (xp, events, 8, 1000);
-    CHECK (ret >= 1);
-
-    uint32_t mask = xpoll_test_events_for (events, ret, pair[0]);
-    CHECK (mask & XPOLL_READ);
-    CHECK_MSG ((mask & XPOLL_WRITE) == 0,
-               "write readiness reported for a read-only registration");
-
-    /* Switch the interest set over to writes only. */
-    CHECK (xpoll_modify_fd (xp, pair[0], xpoll_test_fd_udata (pair[0]),
-                            XPOLL_WRITE));
-
-    ret = xpoll_test_wait (xp, events, 8, 1000);
-    CHECK (ret >= 1);
-
-    mask = xpoll_test_events_for (events, ret, pair[0]);
-    CHECK (mask & XPOLL_WRITE);
-    CHECK_MSG ((mask & XPOLL_READ) == 0,
-               "read readiness still reported after modifying to write-only "
-               "(stale registration)");
-
-    /* After removal the fd must go quiet even though it is still readable
-       and writable. */
-    CHECK (xpoll_remove_fd (xp, pair[0]));
-    CHECK_MSG (xpoll_test_wait (xp, events, 8, 0) == 0,
-               "events still reported after xpoll_remove_fd()");
-
+static int
+after_all (void)
+{
     xpoll_test_close_pair (pair);
     xpoll_close (xp);
 
-    return test_report ();
+    return ASSERT_OK;
 }
+
+/* Make the fd both readable and writable, so that a stale read
+   registration is visible in the results. */
+
+static int
+test_xpoll_read_only_registration (void)
+{
+    xpoll_event_t events[8];
+
+    check_true (xpoll_test_write_byte (pair[1]));
+
+    int ret = xpoll_test_wait (xp, events, 8, 1000);
+    check_true (ret >= 1);
+
+    uint32_t mask = xpoll_test_events_for (events, ret, pair[0]);
+
+    check_true (mask & XPOLL_READ);
+    assert_equal (mask & XPOLL_WRITE, 0,
+                  "write readiness reported for a read-only registration");
+
+    return ASSERT_OK;
+}
+
+/* Switch the interest set over to writes only. */
+
+static int
+test_xpoll_modify_replaces_interest_set (void)
+{
+    xpoll_event_t events[8];
+
+    check_true (xpoll_modify_fd (xp, pair[0], xpoll_test_fd_udata (pair[0]),
+                                 XPOLL_WRITE));
+
+    int ret = xpoll_test_wait (xp, events, 8, 1000);
+    check_true (ret >= 1);
+
+    uint32_t mask = xpoll_test_events_for (events, ret, pair[0]);
+
+    check_true (mask & XPOLL_WRITE);
+    assert_equal (mask & XPOLL_READ, 0,
+                  "read readiness still reported after modifying to "
+                  "write-only (stale registration)");
+
+    return ASSERT_OK;
+}
+
+/* After removal the fd must go quiet even though it is still readable
+   and writable. */
+
+static int
+test_xpoll_remove_silences_fd (void)
+{
+    xpoll_event_t events[8];
+
+    check_true (xpoll_remove_fd (xp, pair[0]));
+    assert_equal (xpoll_test_wait (xp, events, 8, 0), 0,
+                  "events still reported after xpoll_remove_fd()");
+
+    return ASSERT_OK;
+}
+
+const struct libtest_config LIBTEST_CONFIG_SYMBOL = {
+    .test_cases = (const struct libtest_test_case *[]) {
+        define_test_case(test_xpoll_read_only_registration),
+        define_test_case(test_xpoll_modify_replaces_interest_set),
+        define_test_case(test_xpoll_remove_silences_fd),
+        NULL,
+    },
+    .before_all = &before_all,
+    .after_all = &after_all,
+};

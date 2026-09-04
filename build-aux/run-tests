@@ -1,0 +1,292 @@
+#!/bin/sh
+
+VERSION=1.0.0
+me="$0"
+enable_color=0
+parallel_jobs=1
+log_dir=""
+
+test -t 1 && test -t 2 && enable_color=1
+
+if test -n "$MAKEFLAGS"; then
+    set_jobs_next=0
+
+    for flag in $MAKEFLAGS; do
+        test "$set_jobs_next" -eq 1 && parallel_jobs="$flag"
+
+        case "$flag" in
+            --jobs|-j)
+                set_jobs_next=1
+                continue
+                ;;
+
+            -j[0-9]*)
+                value=`printf '%s' "$flag" | cut -c 3-`
+                parallel_jobs="$value"
+                ;;
+
+            --jobs=*|-j=*)
+                value=`printf '%s' "$flag" | cut -d'=' -f2`
+                parallel_jobs="$value"
+                ;;
+        esac
+    done
+
+    if ! test "$parallel_jobs" -eq "$parallel_jobs" > /dev/null 2>&1; then
+        parallel_jobs=1
+    fi 
+fi
+
+print_error ()
+{
+    format="$1"
+    shift
+    printf "%s: $format\n" "$me" $@ >&2
+}
+
+usage ()
+{
+    printf "Run libtest suites.\n"
+    printf "\n"
+    printf "Usage:\n"
+    printf "  %s [options...] [tests...]\n" "$me"
+    printf "\n"
+    printf "Options:\n"
+    printf "  -h, --help             Show this help and exit.\n"
+    printf "  -v, --version          Show version information and exit.\n"
+    printf "  -j, --parallel-jobs=N  Run N test suites in parallel.\n"
+    printf "  -L, --log-dir=DIR      Output a copy of the logs (stdout, stderr)\n"
+    printf "                         into individual files per test suite\n"
+    printf "                         inside DIR.\n"
+    printf "\n"
+    printf "Bug reports can be sent directly to <rakinar2@osndevs.org>.\n"
+}
+
+show_version ()
+{
+    printf "run-tests version %s (libtest)\n" "$VERSION"
+    printf "License GPLv3.0+: This is free software.\n"
+}
+
+while test $# -gt 0; do
+    case "$1" in
+        -h|--help)
+            usage
+            exit 0
+            ;;
+
+        -V|--version)
+            show_version
+            exit 0
+            ;;
+
+        -j|--parallel-jobs)
+            test -z "$2" && print_error "'%s' requires an argument" "$1" && exit 1
+            test "$2" -lt 1 && print_error "'%s' a nonzero positive integer argument" "$1" && exit 1
+            parallel_jobs="$2"
+            shift 2
+            ;;
+
+        -L|--log-dir)
+            test -z "$2" && print_error "'%s' requires an argument" "$1" && exit 1
+            log_dir="$2"
+            shift 2
+            ;;
+
+        --)
+            shift
+            break
+            ;;
+
+        -*)
+            print_error "invalid option '%s'" "$1"
+            exit 1
+            ;;
+
+        *)
+            break
+            ;;
+    esac
+done
+
+passed_suite_count=0
+failed_suite_count=0
+total_passed_count=0
+total_failed_count=0
+
+date=`date '+%s'`
+tmp_list=""
+tmp_fifo_list=""
+
+trap 'code=$?; test -n "$tmp_list" && rm -f -- $tmp_list $tmp_fifo_list; exit $code;' EXIT INT TERM
+
+if test -n "$log_dir"; then
+    enable_color=0
+    mkdir -p "$log_dir" || exit 1
+fi
+
+print_status_internal ()
+{
+    printf "  $status_color%-8s$status_reset %s $format\n" "$status_kind" "$status_test_program" $@
+}
+
+print_status ()
+{
+    status_test_program="$1"
+    status_test_pid="$2"
+    status_log_file="$3"
+    status_kind="$4"
+    format="$5"
+    shift 5
+
+    status_color=""
+    status_reset=""
+
+    if test $enable_color -eq 1; then
+        status_reset="\033[0m"
+
+        case "$status_kind" in
+            FAIL|TERM|SIGNAL)
+                status_color="\033[1;31m"
+                ;;
+
+            EXIT)
+                status_color="\033[1;32m"
+                ;;
+
+            *)
+                status_color="\033[1;33m"
+                ;;
+        esac
+    fi
+
+    if test -n "$status_log_file"; then
+        print_status_internal $@ 2>&1 | tee -a "$status_log_file"
+    else
+        print_status_internal $@
+    fi
+}
+
+test_pid_entries=""
+wait_count=0
+
+wait_for_tests ()
+{
+    for pid_entry in $test_pid_entries; do
+        pid=`printf '%s' "$pid_entry" | cut -d'|' -f1`
+        test_program=`printf '%s' "$pid_entry" | cut -d'|' -f2`
+        tmp=`printf '%s' "$pid_entry" | cut -d'|' -f3`
+        log_file=`printf '%s' "$pid_entry" | cut -d'|' -f4`
+
+        wait $pid
+        test_code=$?
+
+        if test $test_code -eq 0; then
+            passed_suite_count=`expr $passed_suite_count + 1`
+        else
+            failed_suite_count=`expr $failed_suite_count + 1`
+        fi
+
+        if test ! -s "$tmp"; then
+            print_status "$test_program" "$pid" "$log_file" "TERM" "(died without reporting, exit code %s)" "$test_code"
+            continue
+        fi
+
+        passed_count=`cut -d';' -f1 < "$tmp" | cut -d' ' -f2`
+        failed_count=`cut -d';' -f2 < "$tmp" | cut -d' ' -f2`
+        exit_line=`cut -d';' -f3 < "$tmp"`
+        exit_line_cmd=`echo "$exit_line" | cut -d' ' -f1`
+        exit_line_val=`echo "$exit_line" | cut -d' ' -f2`
+        total_passed_count=`expr $total_passed_count + $passed_count`
+        total_failed_count=`expr $total_failed_count + $failed_count`
+
+        if test "$exit_line_cmd" = "EXIT"; then
+            if test "$exit_line_val" != "0"; then
+                print_status "$test_program" "$pid" "$log_file" "FAIL" "(exited: %s)" "$exit_line_val"
+            else
+                print_status "$test_program" "$pid" "$log_file" "EXIT" ""
+            fi
+        else
+            print_status "$test_program" "$pid" "$log_file" "SIGNAL" "(%s)" "$exit_line_val"
+        fi
+    done
+
+    test_pid_entries=""
+    wait_count=0
+}
+
+exec_test_internal ()
+{
+    $TEST_INTERPRETER ./$test_program --color=$enable_color --report="$tmp"
+}
+
+main ()
+{
+    for test_program in "$@"; do
+        tmp=`mktemp 2>/dev/null`
+
+        if test -z "$tmp"; then
+            print_error "Unable to create temporary file for %s" "$test_program"
+            continue
+        fi
+        
+        tmp_list="$tmp_list $tmp"
+        log_file=""
+
+        : > "$tmp"
+
+        if test -n "$log_dir"; then
+            log_file="$log_dir/$test_program.log"
+            : > "$log_file"
+
+            tmp_fifo="${TMPDIR:-/tmp}/libtest-$test_program.$$"
+            
+            if ! mkfifo "$tmp_fifo"; then
+                echo "error: unable to create FIFO" >> "$log_file"
+                continue
+            fi
+
+            tmp_fifo_list="$tmp_fifo_list $tmp_fifo"
+
+            tee -a "$log_file" < "$tmp_fifo" &
+            exec_test_internal > "$tmp_fifo" 2>&1 &
+            pid=$!
+        else
+            exec_test_internal &
+            pid=$!
+        fi
+
+        pid=$!
+        test_pid_entries="$test_pid_entries $pid|$test_program|$tmp|$log_file"
+        wait_count=`expr $wait_count + 1`
+
+        if test $wait_count -ge $parallel_jobs; then
+            wait_for_tests
+        fi
+    done
+
+    if test $wait_count -gt 0; then
+        wait_for_tests
+    fi
+
+    printf "\n"
+    printf "\n"
+    printf "Summary:\n"
+    printf -- "--------\n"
+    printf "Parallel jobs: %d\n" "$parallel_jobs"
+    printf "Passed tests:  %d\n" "$total_passed_count"
+    printf "Passed suites: %d\n" "$passed_suite_count"
+    printf "Failed tests:  %d\n" "$total_failed_count"
+    printf "Failed suites: %d\n" "$failed_suite_count"
+    printf "Total tests:   %d\n" `expr "$total_passed_count" + "$total_failed_count"`
+    printf "Total suites:  %d\n" `expr "$passed_suite_count" + "$failed_suite_count"`
+    printf "\n"
+
+    if test $total_failed_count -gt 0 || test $failed_suite_count -gt 0; then
+        exit 1
+    fi
+
+    exit 0
+}
+
+main "$@"

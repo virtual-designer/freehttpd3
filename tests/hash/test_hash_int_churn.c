@@ -14,41 +14,65 @@
 #include <stdlib.h>
 
 #include "hash/int_htable.h"
-#include "test-common.h"
+#include "libtest.h"
 
 #define KEYSET 8
 #define CYCLES 5000
 
-int
-main (void)
-{
-    int_htable_t *table = int_htable_create (4);
-    CHECK (table != NULL);
+static int_htable_t *table;
 
+static int
+before_all (void)
+{
+    table = int_htable_create (4);
+
+    return assert_true (table != NULL, "failed to create the table");
+}
+
+static int
+after_all (void)
+{
+    int_htable_free (table);
+
+    return ASSERT_OK;
+}
+
+static int
+test_hash_int_churn (void)
+{
     for (int cycle = 0; cycle < CYCLES; cycle++)
     {
         for (uint64_t i = 0; i < KEYSET; i++)
-            CHECK_MSG (int_htable_set (table, i, (void *) (uintptr_t) (i + 1)),
-                       "set failed for key %llu in cycle %d",
-                       (unsigned long long) i, cycle);
+            assert_true (int_htable_set (table, i, (void *) (uintptr_t) (i + 1)),
+                         "set failed for key %llu in cycle %d",
+                         (unsigned long long) i, cycle);
 
-        CHECK (int_htable_count (table) == KEYSET);
+        check_equal (int_htable_count (table), KEYSET);
 
         for (uint64_t i = 0; i < KEYSET; i++)
-            CHECK (int_htable_get (table, i) == (void *) (uintptr_t) (i + 1));
+            check_true (int_htable_get (table, i)
+                        == (void *) (uintptr_t) (i + 1));
 
         /* Delete in a different order than insertion to avoid always
            exercising the same probe pattern. */
         for (uint64_t i = KEYSET; i-- > 0;)
-            CHECK (int_htable_delete (table, i) == (void *) (uintptr_t) (i + 1));
+            check_true (int_htable_delete (table, i)
+                        == (void *) (uintptr_t) (i + 1));
 
-        CHECK (int_htable_count (table) == 0);
+        check_equal (int_htable_count (table), 0);
 
         for (uint64_t i = 0; i < KEYSET; i++)
-            CHECK (int_htable_has (table, i) == false);
+            check_false (int_htable_has (table, i));
     }
 
-    int_htable_free (table);
-
-    return test_report ();
+    return ASSERT_OK;
 }
+
+const struct libtest_config LIBTEST_CONFIG_SYMBOL = {
+    .test_cases = (const struct libtest_test_case *[]) {
+        define_test_case(test_hash_int_churn),
+        NULL,
+    },
+    .before_all = &before_all,
+    .after_all = &after_all,
+};

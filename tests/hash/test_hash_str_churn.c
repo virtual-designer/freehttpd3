@@ -12,17 +12,32 @@
 #include <stdlib.h>
 
 #include "hash/str_htable.h"
-#include "test-common.h"
+#include "libtest.h"
 
 #define KEYSET 8
 #define CYCLES 5000
 
-int
-main (void)
-{
-    str_htable_t *table = str_htable_create (4);
-    CHECK (table != NULL);
+static str_htable_t *table;
 
+static int
+before_all (void)
+{
+    table = str_htable_create (4);
+
+    return assert_true (table != NULL, "failed to create the table");
+}
+
+static int
+after_all (void)
+{
+    str_htable_free (table);
+
+    return ASSERT_OK;
+}
+
+static int
+test_hash_str_churn (void)
+{
     char key[16];
 
     for (int cycle = 0; cycle < CYCLES; cycle++)
@@ -30,17 +45,18 @@ main (void)
         for (uint64_t i = 0; i < KEYSET; i++)
         {
             snprintf (key, sizeof (key), "k%llu", (unsigned long long) i);
-            CHECK_MSG (
-                str_htable_set (table, key, (void *) (uintptr_t) (i + 1)),
-                "set failed for key %s in cycle %d", key, cycle);
+            assert_true (str_htable_set (table, key,
+                                         (void *) (uintptr_t) (i + 1)),
+                         "set failed for key %s in cycle %d", key, cycle);
         }
 
-        CHECK (str_htable_count (table) == KEYSET);
+        check_equal (str_htable_count (table), KEYSET);
 
         for (uint64_t i = 0; i < KEYSET; i++)
         {
             snprintf (key, sizeof (key), "k%llu", (unsigned long long) i);
-            CHECK (str_htable_get (table, key) == (void *) (uintptr_t) (i + 1));
+            check_true (str_htable_get (table, key)
+                        == (void *) (uintptr_t) (i + 1));
         }
 
         /* Delete in a different order than insertion to avoid always
@@ -48,20 +64,27 @@ main (void)
         for (uint64_t i = KEYSET; i-- > 0;)
         {
             snprintf (key, sizeof (key), "k%llu", (unsigned long long) i);
-            CHECK (str_htable_delete (table, key)
-                   == (void *) (uintptr_t) (i + 1));
+            check_true (str_htable_delete (table, key)
+                        == (void *) (uintptr_t) (i + 1));
         }
 
-        CHECK (str_htable_count (table) == 0);
+        check_equal (str_htable_count (table), 0);
 
         for (uint64_t i = 0; i < KEYSET; i++)
         {
             snprintf (key, sizeof (key), "k%llu", (unsigned long long) i);
-            CHECK (str_htable_has (table, key) == false);
+            check_false (str_htable_has (table, key));
         }
     }
 
-    str_htable_free (table);
-
-    return test_report ();
+    return ASSERT_OK;
 }
+
+const struct libtest_config LIBTEST_CONFIG_SYMBOL = {
+    .test_cases = (const struct libtest_test_case *[]) {
+        define_test_case(test_hash_str_churn),
+        NULL,
+    },
+    .before_all = &before_all,
+    .after_all = &after_all,
+};
