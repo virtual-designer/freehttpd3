@@ -1,3 +1,40 @@
+04-09-2026  Ar Rakin <rakinar2@osndevs.org>
+
+     [*] merge: branch 'main' of github.com:virtual-designer/freehttpd3
+         
+
+     [*] chore: ensure CI environment variable is checked
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+     [*] feat: migrate to libtest testing framework
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+01-09-2026  Conventional Release Action <rakinar2@onesoftnet.eu.org>
+
+     [*] release: v3.32.0 [skip ci]
+         
+         Signed-off-by: Conventional Release Action <rakinar2@onesoftnet.eu.org>
+         
+
+     [*] release: v3.30.1 [skip ci]
+         
+         Signed-off-by: Conventional Release Action <rakinar2@onesoftnet.eu.org>
+         
+
+     [*] release: v3.29.1 [skip ci]
+         
+         Signed-off-by: Conventional Release Action <rakinar2@onesoftnet.eu.org>
+         
+
+     [*] release: v3.29.0 [skip ci]
+         
+         Signed-off-by: Conventional Release Action <rakinar2@onesoftnet.eu.org>
+         
+
 01-09-2026  Ar Rakin <rakinar2@osndevs.org>
 
      [*] merge: branch 'main' of github.com:virtual-designer/freehttpd3
@@ -39,23 +76,6 @@
      [*] fix: compiler warnings
          
          Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
-         
-
-01-09-2026  Conventional Release Action <rakinar2@onesoftnet.eu.org>
-
-     [*] release: v3.30.1 [skip ci]
-         
-         Signed-off-by: Conventional Release Action <rakinar2@onesoftnet.eu.org>
-         
-
-     [*] release: v3.29.1 [skip ci]
-         
-         Signed-off-by: Conventional Release Action <rakinar2@onesoftnet.eu.org>
-         
-
-     [*] release: v3.29.0 [skip ci]
-         
-         Signed-off-by: Conventional Release Action <rakinar2@onesoftnet.eu.org>
          
 
 01-09-2026  Ar Rakin <rakinar2@onesoftnet.eu.org>
