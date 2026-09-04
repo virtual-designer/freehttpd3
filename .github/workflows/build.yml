@@ -30,7 +30,13 @@ jobs:
 
       - name: Install Tools (Darwin)
         run: |
-          brew install automake autoconf libtool siege valgrind
+          brew install --HEAD LouisBrunner/valgrind/valgrind || {
+            export HOMEBREW_NO_INSTALL_FROM_API=1
+            brew tap Homebrew/core
+            brew install --HEAD LouisBrunner/valgrind/valgrind
+          }
+
+          brew install automake autoconf libtool siege
           gcc --version
         if: matrix.os == 'macos-latest'
 
