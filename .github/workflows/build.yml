@@ -46,25 +46,15 @@ jobs:
           make distcheck
           rm -rf freehttpd-*/ *.tar.*
 
-      # - name: Benchmark
-      #   run: |
-      #     make check-benchmark || (tail -n100 tests/freehttpd.log && exit 1)
-
-      # - name: Valgrind Benchmark
-      #   run: |
-      #     make check-valgrind-benchmark || (tail -n100 tests/freehttpd-valgrind.log && exit 1)
-      #   if: matrix.os == 'ubuntu-latest'
-
       - name: Upload Artifacts
         id: upload
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: build-artifacts-${{ matrix.os }}.zip
           path: |
             build/
-            tests/freehttpd-valgrind.log
-            tests/freehttpd.log
-            tests/valgrind.log
+            tests/**/logs/
             tests/vgcore.*
             *.tar.gz
             *.tar.bz2
