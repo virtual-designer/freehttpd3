@@ -80,6 +80,12 @@ AS_IF([test "$enable_maintainer_mode" = "yes"], [
 	CONCAT_SPACED_STRING([CFLAGS], [-Wall -Wextra -pedantic -std=gnu99])
 ], [])
 
+dnl Support for one-off dynamic silent rules.
+AC_SUBST([silent_rule_], [@])
+AC_SUBST([silent_rule_0], [@])
+AC_SUBST([silent_rule_1], [])
+AC_SUBST([SILENT_RULE], ['$(silent_rule_$(V))'])
+
 AC_CONFIG_FILES([Makefile
                  src/Makefile
                  src/core/Makefile

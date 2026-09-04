@@ -34,11 +34,12 @@ test_xpoll_udata_SOURCES = test_xpoll_udata.c
 
 $(check_PROGRAMS): $(LIBTEST_LA)
 check-local: $(check_PROGRAMS)
-	@$(RUNTESTS_EXEC) $(check_PROGRAMS)
+	$(SILENT_RULE)$(RUNTESTS_EXEC) $(check_PROGRAMS)
 
 clean-local:
 	$(RM) -f vgcore.*
 	$(RM) -f generic-test_xpoll_* generic-xpoll.o
+	$(SILENT_RULE)@RUNTESTS_CLEANUP_EXEC@
 
 XPOLL_GENERIC_BACKEND_CPPFLAGS = \
     -DFHTTPD_COMPAT_H=1 \

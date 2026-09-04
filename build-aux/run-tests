@@ -5,6 +5,7 @@ me="$0"
 enable_color=0
 parallel_jobs=1
 log_dir=""
+clear_logs=0
 
 test -t 1 && test -t 2 && enable_color=1
 
@@ -44,6 +45,13 @@ print_error ()
     printf "%s: $format\n" "$me" $@ >&2
 }
 
+print_msg ()
+{
+    format="$1"
+    shift
+    printf "%s: $format\n" "$me" $@
+}
+
 usage ()
 {
     printf "Run libtest suites.\n"
@@ -58,6 +66,9 @@ usage ()
     printf "  -L, --log-dir=DIR      Output a copy of the logs (stdout, stderr)\n"
     printf "                         into individual files per test suite\n"
     printf "                         inside DIR.\n"
+    printf "      --clear-logs       Delete the log directory passed to --log-dir.\n"
+    printf "                         This option mainly exists for easy interop \n"
+    printf "                         with make."
     printf "\n"
     printf "Bug reports can be sent directly to <rakinar2@osndevs.org>.\n"
 }
@@ -93,6 +104,11 @@ while test $# -gt 0; do
             shift 2
             ;;
 
+        --clear-logs)
+            clear_logs=1
+            shift
+            ;;
+
         --)
             shift
             break
@@ -108,6 +124,16 @@ while test $# -gt 0; do
             ;;
     esac
 done
+
+if test $clear_logs -eq 1; then
+    if test -n "$log_dir"; then
+        print_msg "removing log directory: %s" "$log_dir"
+        rm -rf "$log_dir"
+        exit $?
+    fi
+
+    exit 0
+fi
 
 passed_suite_count=0
 failed_suite_count=0

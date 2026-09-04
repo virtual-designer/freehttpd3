@@ -56,6 +56,10 @@ check-valgrind:
 .tarball-version:
 	echo "@VERSION@" > .tarball-version
 
+clean-local:
+	$(MAKE) $(AM_MAKEFLAGS) -C libtest clean
+	$(MAKE) $(AM_MAKEFLAGS) -C tests clean
+
 distclean-local:
 	rm -f .tarball-version
 	rm -rf .deps
