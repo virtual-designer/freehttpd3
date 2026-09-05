@@ -25,6 +25,7 @@ jobs:
           sudo apt update
           sudo apt install -y xxd valgrind apache2-utils gcc-14 build-essential siege libtool
           sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-14 500
+          valgrind --version
           gcc --version
         if: matrix.os == 'ubuntu-latest'
 
@@ -37,6 +38,7 @@ jobs:
           }
 
           brew install automake autoconf libtool siege
+          valgrind --version
           gcc --version
         if: matrix.os == 'macos-latest'
 
