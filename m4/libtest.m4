@@ -3,18 +3,18 @@ AC_DEFUN([LIBTEST_INIT], [
 
     LIBTEST_DIR='$(top_srcdir)/libtest'
     LIBTEST_LA='$(top_builddir)/libtest/libtest.la'
-    RUNTEST='$(top_srcdir)/build-aux/runtest'
+    LIBTEST_RUNTEST='$(top_srcdir)/build-aux/runtest'
 
-    RUNTEST_FLAGS_DEFAULT=""
-    test "$CI" = "true" && RUNTEST_FLAGS_DEFAULT="--log-dir logs"
+    LIBTEST_RUNTEST_FLAGS_DEFAULT=""
+    test "$CI" = "true" && LIBTEST_RUNTEST_FLAGS_DEFAULT="--log-dir logs"
 
-    AC_ARG_VAR([RUNTEST_FLAGS], [Flags to be passed to build-aux/runtest])
-    : ${RUNTEST_FLAGS:="$RUNTEST_FLAGS_DEFAULT"}
+    AC_ARG_VAR([LIBTEST_RUNTEST_FLAGS], [Flags to be passed to build-aux/runtest])
+    : ${LIBTEST_RUNTEST_FLAGS:="$LIBTEST_RUNTEST_FLAGS_DEFAULT"}
 
     AC_SUBST([LIBTEST_DIR])
     AC_SUBST([LIBTEST_LA])
-    AC_SUBST([RUNTEST])
-    AC_SUBST([RUNTEST_FLAGS])
-    AC_SUBST([RUNTEST_EXEC], ['MAKEFLAGS="$(MAKEFLAGS)" $(RUNTEST) $(RUNTEST_FLAGS) '])
-    AC_SUBST([RUNTEST_CLEANUP_EXEC], ['$(RUNTEST) $(RUNTEST_FLAGS) --clear-logs'])
+    AC_SUBST([LIBTEST_RUNTEST])
+    AC_SUBST([LIBTEST_RUNTEST_FLAGS])
+    AC_SUBST([LIBTEST_RUNTEST_EXEC], ['MAKEFLAGS="$(MAKEFLAGS)" $(LIBTEST_RUNTEST) $(LIBTEST_RUNTEST_FLAGS) '])
+    AC_SUBST([LIBTEST_RUNTEST_CLEANUP_EXEC], ['$(LIBTEST_RUNTEST) $(LIBTEST_RUNTEST_FLAGS) --clear-logs'])
 ])

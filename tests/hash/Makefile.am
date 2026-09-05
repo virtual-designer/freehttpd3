@@ -44,8 +44,8 @@ test_hash_str_iterate_delete_SOURCES = test_hash_str_iterate_delete.c
 
 $(check_PROGRAMS): $(LIBTEST_LA)
 check-local: $(check_PROGRAMS)
-	$(SILENT_RULE)$(RUNTEST_EXEC) $(check_PROGRAMS)
+	$(SILENT_RULE)$(LIBTEST_RUNTEST_EXEC) $(check_PROGRAMS)
 
 clean-local:
 	$(RM) -f vgcore.*
-	$(SILENT_RULE)@RUNTEST_CLEANUP_EXEC@
+	$(SILENT_RULE)@LIBTEST_RUNTEST_CLEANUP_EXEC@
