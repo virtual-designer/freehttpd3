@@ -34,12 +34,12 @@ test_xpoll_udata_SOURCES = test_xpoll_udata.c
 
 $(check_PROGRAMS): $(LIBTEST_LA)
 check-local: $(check_PROGRAMS)
-	$(SILENT_RULE)$(RUNTESTS_EXEC) $(check_PROGRAMS)
+	$(SILENT_RULE)$(RUNTEST_EXEC) $(check_PROGRAMS)
 
 clean-local:
 	$(RM) -f vgcore.*
 	$(RM) -f generic-test_xpoll_* generic-xpoll.o
-	$(SILENT_RULE)@RUNTESTS_CLEANUP_EXEC@
+	$(SILENT_RULE)@RUNTEST_CLEANUP_EXEC@
 
 XPOLL_GENERIC_BACKEND_CPPFLAGS = \
     -DFHTTPD_COMPAT_H=1 \
@@ -70,7 +70,7 @@ check-xpoll-generic-backend: $(LIBTEST_LA) generic-xpoll.o
 	done; \
 	flags=""; \
 	log_opt_found=0; \
-	for arg in $(RUNTESTS_FLAGS); do \
+	for arg in $(RUNTEST_FLAGS); do \
 		test $log_opt_found -eq 1 && flags="$flags generic-$arg" && log_opt_found=0 && continue; \
 		case "$$arg" in \
 			-L|--log-dir) log_opt_found=1; ;; \
@@ -78,6 +78,6 @@ check-xpoll-generic-backend: $(LIBTEST_LA) generic-xpoll.o
 		esac; \
 	done; \
 	TEST_INTERPRETER="timeout $(XPOLL_GENERIC_BACKEND_TIMEOUT) $$TEST_INTERPRETER" \
-	    $(RUNTESTS_EXEC) $$flags $$progs
+	    $(RUNTEST_EXEC) $$flags $$progs
 
 .PHONY: check-xpoll-generic-backend

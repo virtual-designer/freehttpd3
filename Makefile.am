@@ -8,7 +8,7 @@ EXTRA_DIST = \
 	ChangeLog \
 	.tarball-version \
 	build-aux/valgrind \
-	build-aux/run-tests \
+	$(RUNTEST) \
 	build-aux/genchangelog \
 	build-aux/update-license-comments \
 	build-aux/git-version-gen
