@@ -1,4 +1,57 @@
+05-09-2026  Ar Rakin <rakinar2@osndevs.org>
+
+     [*] build: fixup var names
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+     [*] build: fixup var names
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+     [*] ci: remove valgrind checks for darwin
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+     [*] ci: update workflows
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
 04-09-2026  Ar Rakin <rakinar2@osndevs.org>
+
+     [*] test: update test_xpoll_basic.c
+         
+
+     [*] fix(libtest): minor issues
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+     [*] ci: install valgrind on darwin
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+     [*] ci: install valgrind on darwin
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+     [*] ci: install valgrind on darwin
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+     [*] merge: branch 'main' of github.com:virtual-designer/freehttpd3
+         
+
+     [*] ci: always upload test artifacts
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
 
      [*] fix: distclean broken
          
@@ -24,6 +77,11 @@
          
 
 04-09-2026  Conventional Release Action <rakinar2@onesoftnet.eu.org>
+
+     [*] release: v3.33.2 [skip ci]
+         
+         Signed-off-by: Conventional Release Action <rakinar2@onesoftnet.eu.org>
+         
 
      [*] release: v3.33.0 [skip ci]
          
