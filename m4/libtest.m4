@@ -1,14 +1,14 @@
 AC_DEFUN([LIBTEST_INIT], [
-    AC_REQUIRE_AUX_FILE([run-tests])
+    AC_REQUIRE_AUX_FILE([runtest])
 
     LIBTEST_DIR='$(top_srcdir)/libtest'
     LIBTEST_LA='$(top_builddir)/libtest/libtest.la'
-    RUNTESTS='$(top_srcdir)/build-aux/run-tests'
+    RUNTESTS='$(top_srcdir)/build-aux/runtest'
 
     RUNTESTS_FLAGS_DEFAULT=""
     test "$CI" = "true" && RUNTESTS_FLAGS_DEFAULT="--log-dir logs"
 
-    AC_ARG_VAR([RUNTESTS_FLAGS], [Flags to be passed to build-aux/run-tests])
+    AC_ARG_VAR([RUNTESTS_FLAGS], [Flags to be passed to build-aux/runtest])
     : ${RUNTESTS_FLAGS:="$RUNTESTS_FLAGS_DEFAULT"}
 
     AC_SUBST([LIBTEST_DIR])

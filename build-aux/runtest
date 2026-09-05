@@ -88,7 +88,7 @@ usage ()
 
 show_version ()
 {
-    printf "run-tests version %s (libtest)\n" "$VERSION"
+    printf "runtest version %s (libtest)\n" "$VERSION"
     printf "License GPLv3.0+: This is free software.\n"
 }
 
