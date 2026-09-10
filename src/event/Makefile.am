@@ -1,9 +1,13 @@
 noinst_LTLIBRARIES = libevent.la
 libevent_la_SOURCES = \
     xpoll.c \
-    xpoll.h \
+    xpoll.h
+
+if FH_BUILD_LINUX
+libevent_la_SOURCES += \
     xio.c \
     xio.h
+endif
 
 libevent_la_LIBADD = $(LIBURING_LIBS)
 

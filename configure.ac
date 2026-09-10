@@ -53,11 +53,24 @@ AS_IF([test "$enable_linux_uring" = yes], [
     AS_IF([test $check_uring = 1], [
         PKG_CHECK_MODULES([LIBURING], [liburing >= 2.0], [
             AC_DEFINE([HAVE_LIBURING], [1], [Define to 1 if liburing is available])
+            build_uring=1
         ], [
             AC_MSG_NOTICE([liburing is not available. failing back to using epoll() by default.])
         ])
     ])
 ])
+
+AS_CASE(["$target"], 
+        [*-linux-*|*-linux|linux-*], [target_linux=1],
+        [*-darwin-*|*-darwin|darwin-*], [target_darwin=1],
+        [*bsd*], [target_bsd=1],
+        [])
+
+AM_CONDITIONAL([FH_BUILD_LINUX_LIBURING], [test "$build_uring" = 1])
+AM_CONDITIONAL([FH_BUILD_LINUX], [test "$target_linux" = 1])
+AM_CONDITIONAL([FH_BUILD_DARWIN], [test "$target_darwin" = 1])
+AM_CONDITIONAL([FH_BUILD_BSD], [test "$target_bsd" = 1])
+AM_CONDITIONAL([FH_BUILD_BSDLIKE], [test "$target_darwin" = 1 || test "$target_bsd" = 1])
 
 PKG_CHECK_MODULES([VALGRIND], [valgrind >= 3.0], [
     AC_DEFINE([HAVE_VALGRIND], [1], [Define to 1 if valgrind libraries and headers are available])
