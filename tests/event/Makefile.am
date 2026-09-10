@@ -1,9 +1,9 @@
 AM_CFLAGS = -std=gnu23 -Wall -Wextra -pedantic -g
 AM_CPPFLAGS = -I$(LIBTEST_DIR) -I$(top_srcdir)/src
 AM_LDFLAGS = $(LIBTEST_LA) \
-    $(top_builddir)/src/event/libevent.a \
-    $(top_builddir)/src/hash/libhash.a \
-    $(top_builddir)/src/utils/libutils.a
+    $(top_builddir)/src/event/libevent.la \
+    $(top_builddir)/src/hash/libhash.la \
+    $(top_builddir)/src/utils/libutils.la
 
 EXTRA_DIST = test_xpoll_common.h
 

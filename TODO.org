@@ -1,0 +1,5 @@
+#+title: TODOs for freehttpd
+
+* Sep 05, 2026
+    - *libtest:* rewrite runtest in C and eliminate forking in libtest.c
+    - *event:* implement xio (cross-platform asynchronous I/O)

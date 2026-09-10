@@ -26,8 +26,11 @@ AM_SILENT_RULES([yes])
 AC_SUBST([VERSION], FHTTPD_VERSION)
 
 AC_ARG_ENABLE([maintainer-mode], 
-              [AS_HELP_STRING([--maintainer-mode    Enable maintainer mode.])], 
+              [AS_HELP_STRING([--enable-maintainer-mode        Enable maintainer mode.])], 
               [enable_maintainer_mode=yes], [enable_maintainer_mode=no])
+AC_ARG_ENABLE([linux-uring],
+              [AS_HELP_STRING([--disable-linux-uring           Disable IO uring support on Linux. Default: no])],
+              [], [enable_linux_uring=yes])
 
 dnl Checks for programs.
 AC_PROG_CC
@@ -41,6 +44,24 @@ AC_SUBST([VALGRIND_WRAPPER], ['$''('abs_top_srcdir')'/build-aux/valgrind])
 dnl Checks for libraries.
 LT_INIT
 LIBTEST_INIT
+
+AS_IF([test "$enable_linux_uring" = yes], [
+    AS_CASE(["$target"], 
+            [*-linux-*|*-linux|linux-*], [check_uring=1],
+            [check_uring=0])
+
+    AS_IF([test $check_uring = 1], [
+        PKG_CHECK_MODULES([LIBURING], [liburing >= 2.0], [
+            AC_DEFINE([HAVE_LIBURING], [1], [Define to 1 if liburing is available])
+        ], [
+            AC_MSG_NOTICE([liburing is not available. failing back to using epoll() by default.])
+        ])
+    ])
+])
+
+PKG_CHECK_MODULES([VALGRIND], [valgrind >= 3.0], [
+    AC_DEFINE([HAVE_VALGRIND], [1], [Define to 1 if valgrind libraries and headers are available])
+], [])
 
 dnl Checks for header files.
 

@@ -1,4 +1,4 @@
-noinst_LIBRARIES = liblog.a
-liblog_a_SOURCES = \
+noinst_LTLIBRARIES = liblog.la
+liblog_la_SOURCES = \
     log.c \
     log.h

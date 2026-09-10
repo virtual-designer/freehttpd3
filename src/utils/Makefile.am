@@ -1,5 +1,5 @@
-noinst_LIBRARIES = libutils.a
-libutils_a_SOURCES = \
+noinst_LTLIBRARIES = libutils.la
+libutils_la_SOURCES = \
     utils.c \
     utils.h \
     types.h \

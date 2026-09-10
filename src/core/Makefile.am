@@ -1,5 +1,5 @@
-noinst_LIBRARIES = libcore.a
-libcore_a_SOURCES = \
+noinst_LTLIBRARIES = libcore.la
+libcore_la_SOURCES = \
     conf.c \
     conf.h \
     server.c \
