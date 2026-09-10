@@ -3,7 +3,7 @@ libevent_la_SOURCES = \
     xpoll.c \
     xpoll.h
 
-if FH_BUILD_LINUX
+if FH_BUILD_LINUX_LIBURING
 libevent_la_SOURCES += \
     xio.c \
     xio.h
