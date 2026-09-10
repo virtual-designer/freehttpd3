@@ -1,7 +1,7 @@
-/* For now only work on Linux (io_uring), then move to xpoll support.
-   In addition, we expect that users have the bleeding edge kernel
-   when using the io_uring backend, preferably 7.0.0+.  Otherwise
-   we can fall back to epoll(2) via xpoll. */
+/* XIO implementation, using io_uring backend on Linux.
+   We expect that users have the bleeding edge kernel
+   when using the io_uring backend, preferably 7.0.0+.
+   Otherwise we can fall back to epoll(2) via xpoll. */
 
 #define _DEFAULT_SOURCE
 #define FH_LOG_MODULE_NAME "xio"
@@ -10,13 +10,13 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <liburing.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <sys/types.h>
-
-#include <liburing.h>
 #include <sys/mman.h>
+#include <sys/socket.h>
+#include <sys/types.h>
 
 #ifdef HAVE_VALGRIND
     #include <valgrind/memcheck.h>
@@ -44,11 +44,6 @@ static_assert ((XIO_RING_BUF_SIZE & (XIO_RING_BUF_SIZE - 1)) == 0,
 
 #define XIO_MAX_DATA_FREELIST_COUNT 2048
 
-enum fh_xio_op
-{
-    XIO_OP_READ = 1,
-};
-
 struct fh_xio_data
 {
     struct fh_xio_data *next;
@@ -65,6 +60,37 @@ struct fh_xio_data
             void *buf;
             size_t size;
         } read;
+
+        struct
+        {
+            fd_t fd;
+            void *buf;
+            size_t size;
+        } write;
+
+        struct
+        {
+            fd_t fd;
+            void *buf;
+            size_t size;
+            int flags;
+        } recv;
+
+        struct
+        {
+            fd_t fd;
+            void *buf;
+            size_t size;
+            int flags;
+        } send;
+
+        struct
+        {
+            fd_t fd;
+            struct sockaddr *addr;
+            socklen_t *addr_len;
+            int flags;
+        } accept;
     } opdata;
 };
 
@@ -76,7 +102,7 @@ struct fh_xio
     size_t ring_kmem_size;
     void *buf;
     unsigned int buf_mask;
-    size_t *buf_offsets;
+    uint32_t *buf_offsets;
     uint32_t *buf_refcount;
     struct fh_xio_data *data_head;
     struct fh_xio_data *data_tail;
@@ -124,7 +150,7 @@ fh_xio_create (void)
     if (!xio)
         return NULL;
 
-    xio->buf_offsets = (size_t *) (xio + 1);
+    xio->buf_offsets = (uint32_t *) (xio + 1);
     xio->buf_refcount = (uint32_t *) (xio->buf_offsets + XIO_RING_BUF_COUNT);
 
     struct io_uring_params params = { 0 };
@@ -269,14 +295,11 @@ fh_xio_drain (struct fh_xio *xio)
             count++;
 
             if ((void *) data == (void *) xio)
-            {
                 done = true;
-                break;
-            }
             else if (!data || (cqe->flags & IORING_CQE_F_MORE))
                 continue;
-
-            free (data);
+            else
+                free (data);
         }
 
         io_uring_cq_advance (&xio->ring, count);
@@ -357,7 +380,9 @@ fh_xio_data_get (struct fh_xio *xio)
     struct fh_xio_data *data = xio->data_tail;
     xio->data_tail = data->prev;
 
-    if (!xio->data_tail)
+    if (xio->data_tail)
+        xio->data_tail->next = NULL;
+    else
         xio->data_head = NULL;
 
     xio->data_count--;
@@ -365,36 +390,64 @@ fh_xio_data_get (struct fh_xio *xio)
     return data;
 }
 
+/* The caller of this function is expected to pass a valid bid,
+   otherwise the behavior is undefined. */
+
 static inline void
 fh_xio_data_populate (const struct fh_xio_data *data,
                       const struct io_uring_cqe *cqe, size_t *request_size,
-                      bool *size_skipped, void **buf_ptr)
+                      void **out_buf_ptr)
 {
-    (void) cqe;
     size_t size;
+    void *buf_ptr = NULL;
+    const size_t dfl_size = cqe->res < 0 ? 0 : (size_t) cqe->res;
 
     switch (data->op)
     {
+            /* For read(2) and write(2) operations, the kernel advances the
+               buffers by the requested size, not the actual count of bytes
+               read.  Therefore, we consider the requested size. */
+
         case XIO_OP_READ:
-            size = data->opdata.read.size;
+            size = cqe->res < 0 ? 0 : data->opdata.read.size;
+            buf_ptr = data->opdata.read.buf;
+            break;
 
-            if (data->opdata.read.buf)
-                *buf_ptr = data->opdata.read.buf;
+        case XIO_OP_WRITE:
+            size = cqe->res < 0 ? 0 : data->opdata.write.size;
+            buf_ptr = data->opdata.write.buf;
+            break;
 
+        case XIO_OP_RECV:
+            size = MIN_VALUE (data->opdata.recv.size, dfl_size);
+            buf_ptr = data->opdata.recv.buf;
+            break;
+
+        case XIO_OP_SEND:
+            size = MIN_VALUE (data->opdata.send.size, dfl_size);
+            buf_ptr = data->opdata.send.buf;
+            break;
+
+        case XIO_OP_ACCEPT:
+            size = dfl_size;
             break;
 
         default:
             assert (false && "Unknown operation");
-            *size_skipped = true;
+            *request_size = dfl_size;
+            /* Do not modify out_buf_ptr if not available. */
             return;
     }
 
-    *request_size = size ? size : XIO_RING_BUF_SIZE;
+    *request_size = size;
+
+    if (buf_ptr)
+        *out_buf_ptr = buf_ptr;
 }
 
-int
-fh_xio_request_read (struct fh_xio *xio, void *udata, fd_t fd, void *buf,
-                     size_t size, off_t offset)
+static inline int
+fh_xio_request_prep_common (struct fh_xio *xio, struct fh_xio_data **out_data,
+                            struct io_uring_sqe **out_sqe)
 {
     struct fh_xio_data *data = fh_xio_data_get (xio);
 
@@ -409,6 +462,33 @@ fh_xio_request_read (struct fh_xio *xio, void *udata, fd_t fd, void *buf,
         return -EAGAIN;
     }
 
+    *out_data = data;
+    *out_sqe = sqe;
+    return 0;
+}
+
+static inline void
+fh_xio_request_setup_sqe_common (struct io_uring_sqe *sqe, const void *buf)
+{
+    if (!buf)
+    {
+        sqe->flags |= IOSQE_BUFFER_SELECT;
+        sqe->buf_group = XIO_RING_BUF_BGID_DEFAULT;
+    }
+}
+
+int
+fh_xio_request_read (struct fh_xio *xio, void *udata, fd_t fd, void *buf,
+                     size_t size, off_t offset)
+{
+    struct fh_xio_data *data;
+    struct io_uring_sqe *sqe;
+
+    int rc = fh_xio_request_prep_common (xio, &data, &sqe);
+
+    if (rc)
+        return rc;
+
     data->op = XIO_OP_READ;
     data->udata = udata;
     data->opdata.read.fd = fd;
@@ -417,12 +497,109 @@ fh_xio_request_read (struct fh_xio *xio, void *udata, fd_t fd, void *buf,
 
     io_uring_prep_read (sqe, fd, buf, size, (unsigned long long) offset);
     io_uring_sqe_set_data (sqe, data);
+    fh_xio_request_setup_sqe_common (sqe, buf);
 
-    if (!buf)
-    {
-        sqe->flags |= IOSQE_BUFFER_SELECT;
-        sqe->buf_group = XIO_RING_BUF_BGID_DEFAULT;
-    }
+    return 0;
+}
+
+int
+fh_xio_request_write (struct fh_xio *xio, void *udata, fd_t fd, void *buf,
+                      size_t size, off_t offset)
+{
+    struct fh_xio_data *data;
+    struct io_uring_sqe *sqe;
+
+    int rc = fh_xio_request_prep_common (xio, &data, &sqe);
+
+    if (rc)
+        return rc;
+
+    data->op = XIO_OP_WRITE;
+    data->udata = udata;
+    data->opdata.write.fd = fd;
+    data->opdata.write.size = size;
+    data->opdata.write.buf = buf;
+
+    io_uring_prep_write (sqe, fd, buf, size, (unsigned long long) offset);
+    io_uring_sqe_set_data (sqe, data);
+    fh_xio_request_setup_sqe_common (sqe, buf);
+
+    return 0;
+}
+
+int
+fh_xio_request_recv (struct fh_xio *xio, void *udata, fd_t fd, void *buf,
+                     size_t size, int flags)
+{
+    struct fh_xio_data *data;
+    struct io_uring_sqe *sqe;
+
+    int rc = fh_xio_request_prep_common (xio, &data, &sqe);
+
+    if (rc)
+        return rc;
+
+    data->op = XIO_OP_RECV;
+    data->udata = udata;
+    data->opdata.recv.fd = fd;
+    data->opdata.recv.size = size;
+    data->opdata.recv.buf = buf;
+    data->opdata.recv.flags = flags;
+
+    io_uring_prep_recv (sqe, fd, buf, size, flags);
+    io_uring_sqe_set_data (sqe, data);
+    fh_xio_request_setup_sqe_common (sqe, buf);
+
+    return 0;
+}
+
+int
+fh_xio_request_send (struct fh_xio *xio, void *udata, fd_t fd, void *buf,
+                     size_t size, int flags)
+{
+    struct fh_xio_data *data;
+    struct io_uring_sqe *sqe;
+
+    int rc = fh_xio_request_prep_common (xio, &data, &sqe);
+
+    if (rc)
+        return rc;
+
+    data->op = XIO_OP_SEND;
+    data->udata = udata;
+    data->opdata.send.fd = fd;
+    data->opdata.send.size = size;
+    data->opdata.send.buf = buf;
+    data->opdata.send.flags = flags;
+
+    io_uring_prep_send (sqe, fd, buf, size, flags);
+    io_uring_sqe_set_data (sqe, data);
+    fh_xio_request_setup_sqe_common (sqe, buf);
+
+    return 0;
+}
+
+int
+fh_xio_request_accept (struct fh_xio *xio, void *udata, fd_t fd,
+                       struct sockaddr *addr, socklen_t *addr_len, int flags)
+{
+    struct fh_xio_data *data;
+    struct io_uring_sqe *sqe;
+
+    int rc = fh_xio_request_prep_common (xio, &data, &sqe);
+
+    if (rc)
+        return rc;
+
+    data->op = XIO_OP_ACCEPT;
+    data->udata = udata;
+    data->opdata.accept.fd = fd;
+    data->opdata.accept.addr = addr;
+    data->opdata.accept.addr_len = addr_len;
+    data->opdata.accept.flags = flags;
+
+    io_uring_prep_accept (sqe, fd, addr, addr_len, flags);
+    io_uring_sqe_set_data (sqe, data);
 
     return 0;
 }
@@ -450,14 +627,16 @@ ssize_t
 fh_xio_wait (struct fh_xio *xio, struct fh_xio_result *results,
              size_t max_results, uint64_t timeout_ms)
 {
-    ssize_t count = 0;
+    ssize_t count = 0, count_advance = 0;
     struct io_uring_cqe *cqe_head = NULL, *cqe;
     struct __kernel_timespec ts = {
         .tv_sec = timeout_ms / 1000,
         .tv_nsec = (timeout_ms % 1000) * 1000000,
     };
 
-    int rc = io_uring_wait_cqes_min_timeout (
+    max_results = MIN_VALUE (max_results, XIO_RING_ENTRIES * 4);
+
+    int rc = io_uring_submit_and_wait_min_timeout (
         &xio->ring, &cqe_head, (unsigned int) max_results, &ts, 1, NULL);
 
     if (rc < 0 && rc != -ETIME && !io_uring_cq_ready (&xio->ring))
@@ -473,39 +652,38 @@ fh_xio_wait (struct fh_xio *xio, struct fh_xio_result *results,
         if ((size_t) count >= max_results)
             break;
 
+        if ((void *) cqe->user_data == (void *) xio || !cqe->user_data)
+        {
+            count_advance++;
+            continue;
+        }
+
         const int32_t bid = cqe->flags >> IORING_CQE_BUFFER_SHIFT;
-        const int32_t f_buffer = cqe->flags & IORING_CQE_F_BUFFER;
+        const int32_t flag_has_buffer = cqe->flags & IORING_CQE_F_BUFFER;
         struct fh_xio_data *data = (struct fh_xio_data *) cqe->user_data;
 
         results[count].flags = cqe->flags;
         results[count].res = cqe->res;
         results[count].udata = data->udata;
-
+        results[count].op = data->op;
         results[count].buf
-            = (f_buffer) ? fh_xio_ring_get_buffer_off (xio, bid) : NULL;
+            = flag_has_buffer ? fh_xio_ring_get_buffer_off (xio, bid) : NULL;
 
         size_t size;
-        bool size_skipped = false;
-        fh_xio_data_populate (data, cqe, &size, &size_skipped,
-                              &results[count].buf);
-
-        if (size_skipped)
-            size = cqe->res < 0 ? XIO_RING_BUF_SIZE - xio->buf_offsets[bid]
-                                : (size_t) cqe->res;
+        fh_xio_data_populate (data, cqe, &size, &results[count].buf);
 
 #if !defined(NDEBUG) && defined(HAVE_VALGRIND)
         /* Silence valgrind false positives: io_uring completions
            write into results[count].buf via the kernel outside of a
            traced syscall, so memcheck can't see the data as
            initialized on its own. Explicitly mark the cqe->res
-           bytes actually written as defined.
-         */
+           bytes actually written as defined. */
 
-        if (cqe->res > 0)
+        if (cqe->res > 0 && results[count].buf)
             VALGRIND_MAKE_MEM_DEFINED (results[count].buf, (size_t) cqe->res);
 #endif /* !defined(NDEBUG) && defined(HAVE_VALGRIND) */
 
-        if (f_buffer)
+        if (flag_has_buffer)
         {
             xio->buf_refcount[bid]++;
 
@@ -516,16 +694,16 @@ fh_xio_wait (struct fh_xio *xio, struct fh_xio_result *results,
                 xio->buf_offsets[bid] = XIO_RING_BUF_SIZE;
             else
                 xio->buf_offsets[bid] += size;
-
-            assert ((cqe->flags & IORING_CQE_F_BUF_MORE)
-                    || xio->buf_offsets[bid] == XIO_RING_BUF_SIZE);
         }
 
-        fh_xio_data_disown (xio, data);
+        if (!(cqe->flags & IORING_CQE_F_MORE))
+            fh_xio_data_disown (xio, data);
+
         count++;
+        count_advance++;
     }
 
-    io_uring_cq_advance (&xio->ring, count);
+    io_uring_cq_advance (&xio->ring, count_advance);
     return count;
 }
 

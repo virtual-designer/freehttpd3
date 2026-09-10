@@ -10,6 +10,8 @@
 
     #define ATTRIBUTE_FORMAT_PRINTF(arg1, arg2)                                \
         __attribute__ ((format (printf, (arg1), (arg2))))
+
+    #undef static_assert
     #define static_assert(test, msg)                                           \
         struct macro_concat (static_assert__dummy_symbol_, __LINE__)           \
         {                                                                      \

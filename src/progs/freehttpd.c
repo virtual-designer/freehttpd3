@@ -3,11 +3,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #define FH_LOG_MODULE_NAME "main"
 
 #include "core/server.h"
 #include "log/log.h"
+#include "utils/utils.h"
+#include "event/xio.h"
 
 #ifdef HAVE_CONFIG_H
     #include "config.h"
@@ -76,6 +79,96 @@ main (int argc, char **argv)
     }
 
     fh_log_init ();
+
+        struct fh_xio *xio = fh_xio_create ();
+
+    if (!xio)
+    {
+        fprintf (stderr, "%s: failed to initialize XIO: %s\n", argv0,
+                 strerror (errno));
+        return EXIT_FAILURE;
+    }
+    int cnt = 0;
+
+    int fds[5];
+
+lbl:
+    for (int i = 1; i <= 5; i++)
+    {
+        char path[512];
+        snprintf (path, sizeof path,
+                  "/home/rakinar2/Projects/freehttpd3/tmp/%d.txt", i);
+
+        fd_t fd = open (path, O_RDONLY);
+
+        if (fd < 0)
+        {
+            perror ("open");
+            fh_xio_free (xio);
+            return EXIT_FAILURE;
+        }
+
+        fds[i - 1] = fd;
+
+        int rc = fh_xio_request_read (xio, (void *) i, fd, NULL, 128, 0);
+
+        if (rc != 0)
+        {
+            perror ("fh_xio_request_read");
+            fh_xio_free (xio);
+            return EXIT_FAILURE;
+        }
+    }
+
+    struct fh_xio_result results[64];
+    ssize_t count = fh_xio_wait (xio, results, 64, 5000);
+
+    if (count < 0)
+    {
+        perror ("fh_xio_wait");
+        fh_xio_free (xio);
+        return EXIT_FAILURE;
+    }
+
+    printf ("Completions: %zi\n", count);
+
+    for (ssize_t i = 0; i < count; i++)
+    {
+        signed int status = fh_xio_result_status (&results[i]);
+
+        if (status < 0)
+        {
+            printf ("Failed %zi: %s\n", i, strerror (errno));
+            continue;
+        }
+
+        void *data = fh_xio_result_get_udata (&results[i]);
+        
+        printf ("[%zi] data: %p\n", i, data);
+        printf ("[%zi] size: %i\n", i, status);
+        void *buf = fh_xio_result_get_buf (&results[i]);
+        printf ("[%zi] buf: %p\n", i, buf);
+
+        printf ("-------:RAW DATA:---------\n");
+        fwrite (buf, 1, (size_t) status, stdout);
+        printf ("-------:RAW DATA END:---------\n");
+
+        fh_xio_result_free (xio, &results[i]);
+    }
+
+    cnt++;
+
+    if (cnt < 3)
+    {
+        for (int i = 0; i < 5; i++)
+            close (fds[i]);
+            
+        puts ("+=======================AGAIN===================+");
+        goto lbl;
+    }
+
+    fh_xio_free (xio);
+    return 0;
 
     const struct fh_config config = {
         .vhost_count = 2,
