@@ -74,7 +74,7 @@ AM_CONDITIONAL([FH_BUILD_BSDLIKE], [test "$target_darwin" = 1 || test "$target_b
 
 PKG_CHECK_MODULES([VALGRIND], [valgrind >= 3.0], [
     AC_DEFINE([HAVE_VALGRIND], [1], [Define to 1 if valgrind libraries and headers are available])
-], [])
+], [:])
 
 dnl Checks for header files.
 
