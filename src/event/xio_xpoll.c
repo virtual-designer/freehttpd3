@@ -171,8 +171,6 @@ fh_xio_free (struct fh_xio *xio)
     free (xio);
 }
 
-/* This always succeeds for epoll(2) backend. */
-
 bool
 fh_xio_submit_requests (struct fh_xio *xio)
 {
@@ -248,6 +246,8 @@ int
 fh_xio_request_recv (struct fh_xio *xio, void *udata, fd_t fd, void *buf,
                      size_t size, int flags)
 {
+    /* TODO */
+    return -ENOTSUP;
 }
 
 ssize_t

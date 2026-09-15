@@ -21,6 +21,7 @@ enum xpoll_event_type
     XPOLL_WRITE = EPOLLOUT,
     XPOLL_ERROR = EPOLLERR,
     XPOLL_HANGUP = EPOLLHUP,
+    XPOLL_EXCLUSIVE = EPOLLEXCLUSIVE
 };
 
 enum xpoll_create_flag
@@ -34,11 +35,12 @@ enum xpoll_create_flag
 
 enum xpoll_event_type
 {
-    XPOLL_READ = 1U << 4,
-    XPOLL_WRITE = 1U << 5,
-    XPOLL_ERROR = 1U << 6,
-    XPOLL_HANGUP = 1U << 7,
-    XPOLL_EDGE = 1U << 8
+    XPOLL_READ = 1U << 3,
+    XPOLL_WRITE = 1U << 4,
+    XPOLL_ERROR = 1U << 5,
+    XPOLL_HANGUP = 1U << 6,
+    XPOLL_EDGE = 1U << 7,
+    XPOLL_EXCLUSIVE = 1U << 8
 };
 
 enum xpoll_create_flag
@@ -54,7 +56,8 @@ enum xpoll_event_type
     XPOLL_WRITE = POLLOUT,
     XPOLL_ERROR = POLLERR,
     XPOLL_HANGUP = POLLHUP,
-    XPOLL_EDGE = 1 << 30
+    XPOLL_EDGE = 1 << 30,
+    XPOLL_EXCLUSIVE = 1 << 31,
 };
 
 /* These have no effect if poll is used. */

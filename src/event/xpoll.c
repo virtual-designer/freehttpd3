@@ -8,7 +8,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "hash/int_htable.h"
+#include "utils/compat.h"
 #include "utils/utils.h"
 #include "xpoll.h"
 
@@ -26,14 +26,21 @@ struct xpoll
     struct kevent event_list[XPOLL_MAX_EVENTS];
 };
 #elif defined(FH_PLATFORM_UNKNOWN)
+struct xpoll_fd_info
+{
+    void *udata;
+};
+
 struct xpoll
 {
-    int_htable_t *fd_table;
-    struct pollfd *fds;
-    void **udata_list;
-    size_t fd_count;
-    size_t fd_cap;
-    size_t fd_last_wait_index;
+    uint32_t pfd_next_idx;
+    uint32_t pfd_count;
+    uint32_t pfd_cap;
+    uint32_t fd_table_cap;
+    uint32_t pfd_last_wait_index;
+    uint32_t *fd_table;
+    struct pollfd *pfd_list;
+    struct xpoll_fd_info *fd_info_list;
 };
 
     #define XPOLL_CTL_ADD 0x1
@@ -88,14 +95,6 @@ xpoll_create_err:
 
     if (!xp)
         return NULL;
-
-    xp->fd_table = int_htable_create (16);
-
-    if (!xp->fd_table)
-    {
-        free (xp);
-        return NULL;
-    }
 
     return xp;
 #endif
@@ -175,126 +174,119 @@ xpoll_ctl_fd (xpoll_t xp, fd_t fd, void *udata, int op_bsd, int op_generic,
     {
         case XPOLL_CTL_ADD:
             {
-                bool flag_created = false;
-                int_htable_set_with_flag (xp->fd_table, (uint64_t) fd,
-                                          xp->fds + xp->fd_count,
-                                          &flag_created);
+                if (fd >= xp->fd_table_cap)
+                {
+                    const uint32_t new_cap = xp->fd_table_cap < 16 ? 16
+                                             : xp->fd_table_cap < (1U << 16U)
+                                                 ? (xp->fd_table_cap << 1)
+                                                 : (fd + 1);
 
-                if (!flag_created)
+                    uint32_t *new_fds = realloc (
+                        xp->fd_table, sizeof (*xp->fd_table) * new_cap);
+
+                    if (!new_fds)
+                        return false;
+
+                    memset (new_fds + xp->fd_table_cap, UINT32_MAX,
+                            (new_cap - xp->fd_table_cap) * sizeof (*xp->fd_table));
+
+                    xp->fd_table = new_fds;
+                    xp->fd_table_cap = new_cap;
+                }
+                else if (xp->fd_table[fd] != UINT32_MAX)
                 {
                     errno = EEXIST;
                     return false;
                 }
 
-                if (xp->fd_count >= xp->fd_cap)
+                if (xp->pfd_count >= xp->pfd_cap)
                 {
-                    const size_t new_cap
-                        = xp->fd_cap < 16 ? 16 : (xp->fd_cap << 1);
-                    struct pollfd *new_fds
-                        = realloc (xp->fds, sizeof (*xp->fds) * new_cap);
+                    const uint32_t new_cap
+                        = xp->pfd_cap < 16 ? 16 : (xp->pfd_cap << 1);
+                    struct pollfd *new_pfd_list = realloc (
+                        xp->pfd_list, sizeof (*xp->pfd_list) * new_cap);
 
-                    if (!new_fds)
+                    if (!new_pfd_list)
                         return false;
 
-                    xp->fds = new_fds;
+                    xp->pfd_list = new_pfd_list;
 
-                    void **new_udata_list = realloc (
-                        xp->udata_list, sizeof (*xp->udata_list) * new_cap);
+                    struct xpoll_fd_info *new_fd_info_list = realloc (
+                        xp->fd_info_list, sizeof (*xp->fd_info_list) * new_cap);
 
-                    if (!new_udata_list)
+                    if (!new_fd_info_list)
                         return false;
 
-                    xp->udata_list = new_udata_list;
-                    xp->fd_cap = new_cap;
+                    xp->fd_info_list = new_fd_info_list;
+                    xp->pfd_cap = new_cap;
                 }
 
-                xp->fds[xp->fd_count].fd = fd;
-                xp->fds[xp->fd_count].events = events & ~XPOLL_EDGE;
-                xp->fds[xp->fd_count].revents = 0;
-                xp->udata_list[xp->fd_count] = udata;
-                xp->fd_count++;
+                const uint32_t idx = xp->pfd_count++;
+
+                xp->pfd_list[idx].fd = fd;
+                xp->pfd_list[idx].events = events & ~XPOLL_EDGE;
+                xp->pfd_list[idx].revents = 0;
+                xp->fd_info_list[idx].udata = udata;
+                xp->fd_table[fd] = idx;
 
                 return true;
             }
 
         case XPOLL_CTL_MOD:
-            if (!int_htable_has (xp->fd_table, (uint64_t) fd))
+            if (!xp->pfd_count || fd >= xp->fd_table_cap
+                || xp->fd_table[fd] == UINT32_MAX)
             {
                 errno = ENOENT;
                 return false;
             }
 
-            for (size_t i = 0; i < xp->fd_count; i++)
-            {
-                if (xp->fds[i].fd == fd)
-                {
-                    xp->fds[i].events = events & ~XPOLL_EDGE;
-                    xp->udata_list[i] = udata;
-                    return true;
-                }
-            }
-
-            errno = ENOENT;
-            return false;
+            const uint32_t idx = xp->fd_table[fd];
+            xp->pfd_list[idx].events = events & ~XPOLL_EDGE;
+            xp->fd_info_list[idx].udata = udata;
+            return true;
 
         case XPOLL_CTL_DEL:
             {
-                bool flag = false;
-                int_htable_delete_with_flag (xp->fd_table, (uint64_t) fd,
-                                             &flag);
-
-                if (!flag)
+                if (!xp->pfd_count || fd >= xp->fd_table_cap
+                    || xp->fd_table[fd] == UINT32_MAX)
                 {
                     errno = ENOENT;
                     return false;
                 }
 
-                bool found = false;
-                size_t fd_index = 0;
+                const uint32_t idx = xp->fd_table[fd];
+                xp->fd_table[fd] = -1;
 
-                for (size_t i = 0; i < xp->fd_count; i++)
+                if (xp->pfd_count > 1)
                 {
-                    if (xp->fds[i].fd == fd)
-                    {
-                        found = true;
-                        fd_index = i;
-                        break;
-                    }
+                    xp->pfd_list[idx] = xp->pfd_list[xp->pfd_count - 1];
+                    xp->fd_info_list[idx] = xp->fd_info_list[xp->pfd_count - 1];
                 }
 
-                if (!found)
+                xp->pfd_count--;
+
+                if (xp->pfd_cap > 16 && xp->pfd_count < (xp->pfd_cap >> 2))
                 {
-                    errno = ENOENT;
-                    return false;
+                    const size_t new_cap = xp->pfd_cap >> 2;
+
+                    struct pollfd *new_pfds = realloc (
+                        xp->pfd_list, sizeof (*xp->pfd_list) * new_cap);
+
+                    struct xpoll_fd_info *fd_info_list = realloc (
+                        xp->fd_info_list, sizeof (*xp->fd_info_list) * new_cap);
+
+                    if (new_pfds)
+                        xp->pfd_list = new_pfds;
+
+                    if (fd_info_list)
+                        xp->fd_info_list = fd_info_list;
+
+                    if (new_pfds || fd_info_list)
+                        xp->pfd_cap = new_cap;
                 }
 
-                memmove (xp->fds + fd_index, xp->fds + fd_index + 1,
-                         sizeof (*xp->fds) * (xp->fd_count - fd_index - 1));
-                memmove (
-                    xp->udata_list + fd_index, xp->udata_list + fd_index + 1,
-                    sizeof (*xp->udata_list) * (xp->fd_count - fd_index - 1));
-
-                xp->fd_count--;
-
-                if (xp->fd_cap > 16 && xp->fd_count < (xp->fd_cap >> 2))
-                {
-                    const size_t new_cap = xp->fd_cap >> 2;
-
-                    struct pollfd *new_fds
-                        = realloc (xp->fds, sizeof (*xp->fds) * new_cap);
-
-                    void **new_udata_list = realloc (
-                        xp->udata_list, sizeof (*xp->udata_list) * new_cap);
-
-                    if (new_fds)
-                        xp->fds = new_fds;
-
-                    if (new_udata_list)
-                        xp->udata_list = new_udata_list;
-
-                    if (new_fds || new_udata_list)
-                        xp->fd_cap = new_cap;
-                }
+                /* Do not attempt to shrink xp->fd_table as we don't know what
+                   the largest fd stored is. */
 
                 return true;
             }
@@ -359,10 +351,7 @@ xpoll_remove_fd (xpoll_t xp, fd_t fd)
    are not duplicated, yet on BSD-like systems, they may be duplicated since
    kevent treats the same fd with different event filters as different entry.
    This is intentional, and the caller must expect duplicated entries while
-   processing events.  In addition, when using the poll() backend, multiple
-   registrations are not de-duped, for now.
-
-   TODO: In the future, consider using a hash table for the poll() backend. */
+   processing events. */
 
 int
 xpoll_wait (xpoll_t xp, xpoll_event_t *events_out, int max_events,
@@ -408,35 +397,35 @@ xpoll_wait (xpoll_t xp, xpoll_event_t *events_out, int max_events,
 
     return ret;
     #elif defined(FH_PLATFORM_UNKNOWN)
-    if (!max_events)
+    if (unlikely (!max_events))
     {
         errno = EINVAL;
         return -1;
     }
 
-    int ret = poll (xp->fds, xp->fd_count, timeout_ms);
+    int ret = poll (xp->pfd_list, xp->pfd_count, timeout_ms);
 
     if (ret < 0)
         return ret;
 
-    if (!xp->fd_count)
+    if (!xp->pfd_count)
         return 0;
 
     int count = 0;
-    size_t limit = xp->fd_count;
+    size_t limit = xp->pfd_count;
     bool rotated = false;
     size_t i;
-    size_t begin = xp->fd_last_wait_index % xp->fd_count;
+    size_t begin = xp->pfd_last_wait_index % xp->pfd_count;
 
     for (i = begin; i < limit && count < max_events;)
     {
-        if (xp->fds[i].revents)
+        if (xp->pfd_list[i].revents)
         {
-            events_out[count].udata = xp->udata_list[i];
-            events_out[count].fd = xp->fds[i].fd;
-            events_out[count].events = xp->fds[i].revents;
+            events_out[count].udata = xp->fd_info_list[i].udata;
+            events_out[count].fd = xp->pfd_list[i].fd;
+            events_out[count].events = xp->pfd_list[i].revents;
 
-            if (xp->fds[i].revents & POLLNVAL)
+            if (xp->pfd_list[i].revents & POLLNVAL)
             {
                 events_out[count].events |= XPOLL_ERROR;
                 events_out[count].events &= ~POLLNVAL;
@@ -445,7 +434,7 @@ xpoll_wait (xpoll_t xp, xpoll_event_t *events_out, int max_events,
             count++;
         }
 
-        if (i + 1 >= xp->fd_count && !rotated && begin != 0)
+        if (i + 1 >= xp->pfd_count && !rotated && begin != 0)
         {
             rotated = true;
             limit = begin;
@@ -457,7 +446,7 @@ xpoll_wait (xpoll_t xp, xpoll_event_t *events_out, int max_events,
         }
     }
 
-    xp->fd_last_wait_index = i >= xp->fd_count ? 0 : i;
+    xp->pfd_last_wait_index = i >= xp->pfd_count ? 0 : i;
     return count;
     #else
         #error "Unsupported platform"
@@ -474,9 +463,9 @@ xpoll_close (xpoll_t xp)
     close (xp->kq);
     free (xp);
 #else
-    int_htable_free (xp->fd_table);
-    free (xp->fds);
-    free (xp->udata_list);
+    free (xp->fd_table);
+    free (xp->pfd_list);
+    free (xp->fd_info_list);
     free (xp);
 #endif
 }
