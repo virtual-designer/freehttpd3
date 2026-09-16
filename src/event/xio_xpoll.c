@@ -3,6 +3,8 @@
 #define FH_LOG_MODULE_NAME "xio"
 
 #define _GNU_SOURCE
+#define _DARWIN_C_SOURCE
+
 #include "config.h"
 
 #include <assert.h>
@@ -88,9 +90,12 @@ static bool
 fh_xio_slices_alloc (struct fh_xio *xio)
 {
     const size_t size = XIO_SLICE_BUF_SIZE * XIO_SLICE_BUF_COUNT;
-    uint8_t *mem = mmap (NULL, size, PROT_READ | PROT_WRITE,
-                         MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB, -1, 0);
+    uint8_t *mem = MAP_FAILED;
 
+#ifdef FH_PLATFORM_LINUX
+    mem = mmap (NULL, size, PROT_READ | PROT_WRITE,
+                MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB, -1, 0);
+#else
     if (mem == MAP_FAILED)
     {
         mem = mmap (NULL, size, PROT_READ | PROT_WRITE,
@@ -99,10 +104,11 @@ fh_xio_slices_alloc (struct fh_xio *xio)
         if (mem == MAP_FAILED)
             return false;
 
-#ifdef MADV_HUGEPAGE
+    #ifdef MADV_HUGEPAGE
         madvise (mem, size, MADV_HUGEPAGE);
-#endif /* MADV_HUGEPAGE */
+    #endif /* MADV_HUGEPAGE */
     }
+#endif     /* FH_PLATFORM_LINUX */
 
     xio->mem_base = mem;
     xio->slices = NULL;
@@ -150,7 +156,7 @@ fh_xio_create (void)
 
     if (!fh_xio_slices_alloc (xio))
     {
-        close (xio->xp);
+        xpoll_close (xio->xp);
         free (xio);
         return NULL;
     }
