@@ -1,4 +1,23 @@
+16-09-2026  Ar Rakin <rakinar2@onesoftnet.eu.org>
+
+     [*] fix: darwin build issues
+         
+         Signed-off-by: Ar Rakin <rakinar2@onesoftnet.eu.org>
+         
+
+15-09-2026  Ar Rakin <rakinar2@osndevs.org>
+
+     [*] refactor(xpoll): poll(2) backend improvements
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
 10-09-2026  Ar Rakin <rakinar2@osndevs.org>
+
+     [*] feat(event): incomplete xpoll-xio support code
+         
+         Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
 
      [*] build: only build uring related code if liburing is available
          
@@ -16,6 +35,13 @@
      [*] feat(event): xio (io_uring)
          
          Signed-off-by: Ar Rakin <rakinar2@osndevs.org>
+         
+
+10-09-2026  Conventional Release Action <rakinar2@onesoftnet.eu.org>
+
+     [*] release: v3.34.0 [skip ci]
+         
+         Signed-off-by: Conventional Release Action <rakinar2@onesoftnet.eu.org>
          
 
 05-09-2026  Conventional Release Action <rakinar2@onesoftnet.eu.org>
