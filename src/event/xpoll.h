@@ -20,8 +20,8 @@ enum xpoll_event_type
     XPOLL_READ = EPOLLIN,
     XPOLL_WRITE = EPOLLOUT,
     XPOLL_ERROR = EPOLLERR,
+    XPOLL_READ_HANGUP = EPOLLRDHUP,
     XPOLL_HANGUP = EPOLLHUP,
-    XPOLL_EXCLUSIVE = EPOLLEXCLUSIVE
 };
 
 enum xpoll_create_flag
@@ -30,17 +30,19 @@ enum xpoll_create_flag
 };
 
     #define XPOLL_EDGE EPOLLET
+    #define XPOLL_EXCLUSIVE EPOLLEXCLUSIVE
 #elif defined(FH_PLATFORM_BSDLIKE)
     #include <sys/event.h>
 
 enum xpoll_event_type
 {
-    XPOLL_READ = 1U << 3,
-    XPOLL_WRITE = 1U << 4,
-    XPOLL_ERROR = 1U << 5,
-    XPOLL_HANGUP = 1U << 6,
-    XPOLL_EDGE = 1U << 7,
-    XPOLL_EXCLUSIVE = 1U << 8
+    XPOLL_READ = EVFILT_READ,
+    XPOLL_WRITE = EVFILT_WRITE,
+    XPOLL_ERROR = 1U << 2,
+    XPOLL_HANGUP = 1U << 3,
+    XPOLL_READ_HANGUP = 1U << 4,
+    XPOLL_EDGE = 1U << 5,
+    XPOLL_EXCLUSIVE = 1U << 6
 };
 
 enum xpoll_create_flag
@@ -56,6 +58,7 @@ enum xpoll_event_type
     XPOLL_WRITE = POLLOUT,
     XPOLL_ERROR = POLLERR,
     XPOLL_HANGUP = POLLHUP,
+    XPOLL_READ_HANGUP = POLLHUP,
     XPOLL_EDGE = 1 << 30,
     XPOLL_EXCLUSIVE = 1 << 31,
 };
@@ -110,6 +113,7 @@ xpoll_ctl_fd_ (xpoll_t xp, int op, fd_t fd, void *udata,
 
     #define XPOLL_EVENT_FD(event) ((event)->data.fd)
     #define XPOLL_EVENT_UDATA(event) ((event)->data.ptr)
+    #define XPOLL_EVENT_MASK(event) ((event)->events)
 #else
 typedef struct xpoll_event
 {
@@ -120,6 +124,7 @@ typedef struct xpoll_event
 
     #define XPOLL_EVENT_FD(event) ((event)->fd)
     #define XPOLL_EVENT_UDATA(event) ((event)->udata)
+    #define XPOLL_EVENT_MASK(event) ((event)->events)
 
 int xpoll_wait (xpoll_t xp, xpoll_event_t *events_out, int max_events,
                 int timeout_ms);
@@ -131,5 +136,7 @@ bool xpoll_remove_fd (xpoll_t xp, fd_t fd);
 
 xpoll_t xpoll_create (enum xpoll_create_flag flags);
 void xpoll_close (xpoll_t xp);
+bool xpoll_add_or_modify_fd (xpoll_t xp, fd_t fd, void *udata,
+                             xpoll_event_type_t events);
 
 #endif /* FH_XPOLL_H */

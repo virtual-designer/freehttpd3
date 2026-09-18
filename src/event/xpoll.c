@@ -188,7 +188,8 @@ xpoll_ctl_fd (xpoll_t xp, fd_t fd, void *udata, int op_bsd, int op_generic,
                         return false;
 
                     memset (new_fds + xp->fd_table_cap, UINT32_MAX,
-                            (new_cap - xp->fd_table_cap) * sizeof (*xp->fd_table));
+                            (new_cap - xp->fd_table_cap)
+                                * sizeof (*xp->fd_table));
 
                     xp->fd_table = new_fds;
                     xp->fd_table_cap = new_cap;
@@ -383,10 +384,7 @@ xpoll_wait (xpoll_t xp, xpoll_event_t *events_out, int max_events,
     for (int i = 0; i < ret; i++)
     {
         events_out[i].udata = xp->event_list[i].udata;
-        events_out[i].events
-            = xp->event_list[i].filter == EVFILT_READ    ? XPOLL_READ
-              : xp->event_list[i].filter == EVFILT_WRITE ? XPOLL_WRITE
-                                                         : 0;
+        events_out[i].events = xp->event_list[i].filter;
 
         if (xp->event_list[i].flags & EV_ERROR)
             events_out[i].events |= XPOLL_ERROR;
@@ -427,8 +425,8 @@ xpoll_wait (xpoll_t xp, xpoll_event_t *events_out, int max_events,
 
             if (xp->pfd_list[i].revents & POLLNVAL)
             {
-                events_out[count].events |= XPOLL_ERROR;
                 events_out[count].events &= ~POLLNVAL;
+                events_out[count].events |= XPOLL_ERROR;
             }
 
             count++;
@@ -453,6 +451,30 @@ xpoll_wait (xpoll_t xp, xpoll_event_t *events_out, int max_events,
     #endif
 }
 #endif
+
+bool
+xpoll_add_or_modify_fd (xpoll_t xp, fd_t fd, void *udata,
+                        xpoll_event_type_t events)
+{
+#if defined(FH_PLATFORM_BSDLIKE)
+    return xpoll_ctl_fd (xp, fd, udata, EV_ADD, 0, events, true);
+#elif defined(FH_PLATFORM_LINUX)
+    struct epoll_event ev;
+
+    ev.events = events;
+    ev.data.ptr = udata;
+
+    if (epoll_ctl (xp, EPOLL_CTL_MOD, fd, &ev))
+        return !epoll_ctl (xp, EPOLL_CTL_ADD, fd, &ev);
+    
+    return true;
+#else
+    if (!xpoll_ctl_fd (xp, fd, udata, 0, XPOLL_CTL_MOD, events, true))
+        return xpoll_ctl_fd (xp, fd, udata, 0, XPOLL_CTL_ADD, events, true);
+
+    return true;
+#endif
+}
 
 void
 xpoll_close (xpoll_t xp)

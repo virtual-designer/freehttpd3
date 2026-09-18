@@ -4,7 +4,7 @@
    Otherwise we can fall back to epoll(2) via xpoll. */
 
 #define _DEFAULT_SOURCE
-#define FH_LOG_MODULE_NAME "xio"
+#define FH_LOG_MODULE_NAME "xio:uring"
 
 #include "config.h"
 
@@ -404,9 +404,9 @@ fh_xio_data_populate (const struct fh_xio_data *data,
 
     switch (data->op)
     {
-            /* For read(2) and write(2) operations, the kernel advances the
-               buffers by the requested size, not the actual count of bytes
-               read.  Therefore, we consider the requested size. */
+        /* For read(2) and write(2) operations, the kernel advances the
+           buffers by the requested size, not the actual count of bytes
+           read.  Therefore, we consider the requested size. */
 
         case XIO_OP_READ:
             size = cqe->res < 0 ? 0 : data->opdata.read.size;

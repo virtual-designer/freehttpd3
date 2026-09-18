@@ -27,6 +27,13 @@ enum fh_xio_op
     XIO_OP_ACCEPT,
 };
 
+enum xio_task_flag
+{
+    XIO_TASK_F_BUFFER = 0x1,
+    XIO_TASK_F_MORE = 0x2,
+    XIO_TASK_F_INTERNAL_ERROR = 0x4
+};
+
 struct fh_xio_result
 {
     enum fh_xio_op op;
@@ -35,46 +42,6 @@ struct fh_xio_result
     void *buf;
     void *udata;
 };
-
-static inline enum fh_xio_op
-fh_xio_result_op (const struct fh_xio_result *result)
-{
-#if defined(FH_PLATFORM_LINUX)
-    return result->op;
-#else
-    return -1;
-#endif
-}
-
-static inline signed int
-fh_xio_result_status (const struct fh_xio_result *result)
-{
-#if defined(FH_PLATFORM_LINUX)
-    return result->res;
-#else
-    return -1;
-#endif
-}
-
-static inline void *
-fh_xio_result_get_buf (const struct fh_xio_result *result)
-{
-#if defined(FH_PLATFORM_LINUX)
-    return result->buf;
-#else
-    return NULL;
-#endif
-}
-
-static inline void *
-fh_xio_result_get_udata (const struct fh_xio_result *result)
-{
-#if defined(FH_PLATFORM_LINUX)
-    return result->udata;
-#else
-    return NULL;
-#endif
-}
 
 /* These functions set errno if an error has occurred and it can be
    handled. */
